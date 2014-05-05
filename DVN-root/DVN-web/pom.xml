@@ -4,12 +4,12 @@
     <parent>
         <artifactId>DVN-root</artifactId>
         <groupId>edu.harvard.iq.dvn</groupId>
-        <version>3.6.1</version>
+        <version>3.6.2-odum-01</version>
     </parent>
 
     <groupId>edu.harvard.iq.dvn</groupId>
     <artifactId>DVN-web</artifactId>
-    <version>3.6.1</version>
+    <version>3.6.2-odum-01</version>
     <packaging>war</packaging>
     <name>DVN-web</name>
 
@@ -45,6 +45,14 @@
     </repositories>
 
     <dependencies>
+        <!-- Odum added: to supress exception messages during deployment-->
+<dependency>
+    <groupId>joda-time</groupId>
+    <artifactId>joda-time</artifactId>
+    <version>1.6</version>
+</dependency>
+        
+        
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-atom</artifactId>
@@ -537,6 +545,12 @@
         <resources>     
             <resource>
                 <directory>src/main/resources</directory>
+                <!-- Odum added: to control logging output during deployment -->
+                <includes>
+                    <include>**/*.xml</include>
+                    <include>*.properties</include>
+                </includes>
+                
             </resource>
             <resource>
                 <directory>src/main/java</directory>

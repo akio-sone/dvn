@@ -17,6 +17,9 @@
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <netbeans.hint.deploy.server>gfv3ee6</netbeans.hint.deploy.server>
+        
+        <jargon.version>3.3.3-SNAPSHOT</jargon.version>
+        
     </properties>
       
     <repositories>
@@ -42,7 +45,74 @@
             <url>http://anonsvn.icefaces.org/repo/maven2/releases/</url>
         </repository>
         
+        
+        
+        <repository>
+            <id>ibiblio.repository</id>
+            <name>ibiblio.repository</name>
+            <url>http://mirrors.ibiblio.org/pub/mirrors/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+                <updatePolicy>never</updatePolicy>
+                <checksumPolicy>fail</checksumPolicy>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>dice.repository snaps</id>
+            <name>dice.repository.snapshots</name>
+            <url>https://raw.github.com/DICE-UNC/DICE-Maven/master/snapshots</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>dice.repository</id>
+            <name>dice.repository</name>
+            <url>https://raw.github.com/DICE-UNC/DICE-Maven/master/releases</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </snapshots>
+        </repository>
+        
+        
+        
     </repositories>
+
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Import the ModeShape BOM for embedded usage. This adds to the "dependenciesManagement" section
+            defaults for all of the modules we might need, but we still have to include in the
+            "dependencies" section the modules we DO need. The benefit is that we don't have to
+            specify the versions of any of those modules.-->
+            <dependency>
+                <groupId>org.modeshape.bom</groupId>
+                <artifactId>modeshape-bom-embedded</artifactId>
+                <version>3.7.1.Final</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+
+
+
+
+
 
     <dependencies>
         <!-- Odum added: to supress exception messages during deployment-->
@@ -535,8 +605,44 @@
             <groupId>org.sqlite</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.6.16</version>
-        </dependency>        
-                                                                                                                                                                                                                                        
+        </dependency>
+        
+        
+        <dependency>
+            <groupId>org.irods.jargon</groupId>
+            <artifactId>irods-connector</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.irods.jargon</groupId>
+            <artifactId>jargon-core</artifactId>
+            <version>${jargon.version}</version>
+        </dependency>
+       
+
+        <dependency>
+            <groupId>javax.jcr</groupId>
+            <artifactId>jcr</artifactId>
+        </dependency>
+        
+        
+  <dependency>
+    <groupId>org.modeshape</groupId>
+    <artifactId>modeshape-jcr</artifactId>
+  </dependency>
+        
+        
+        
+        <!-- Directly depend on ModeShape's public API -->
+        <dependency>
+            <groupId>org.modeshape</groupId>
+            <artifactId>modeshape-jcr-api</artifactId>
+        </dependency>
+        
+        
+        
+        
+        
     </dependencies>
 
     <build>

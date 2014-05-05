@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -393,7 +394,7 @@ public class MediaResourceManagerImpl implements MediaResourceManager {
                                 fbList.add(tempFileBean);
                             }
                         } else {
-                            logger.fine("directory found: " + zEntry.getName());
+                            logger.log(Level.FINE, "directory found: {0}", zEntry.getName());
                         }
                     }
                 } catch (IOException ex) {
@@ -404,13 +405,13 @@ public class MediaResourceManagerImpl implements MediaResourceManager {
 //                    }
                 }
                 if (fbList.size() > 0) {
-                    StudyFileServiceLocal studyFileService;
-                    try {
-                        studyFileService = (StudyFileServiceLocal) ctx.lookup("java:comp/env/studyFileService");
-                    } catch (NamingException ex) {
-                        logger.info("problem looking up studyFileService");
-                        throw new SwordServerException("problem looking up studyFileService");
-                    }
+//                    StudyFileServiceLocal studyFileService;
+//                    try {
+//                        studyFileService = (StudyFileServiceLocal) ctx.lookup("java:comp/env/studyFileService");
+//                    } catch (NamingException ex) {
+//                        logger.info("problem looking up studyFileService");
+//                        throw new SwordServerException("problem looking up studyFileService");
+//                    }
                     try {
                         studyFileService.addFiles(study.getLatestVersion(), fbList, vdcUser);
                     } catch (EJBException ex) {

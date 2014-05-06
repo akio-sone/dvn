@@ -27,6 +27,8 @@
  */
 package edu.harvard.iq.dvn.core.study;
 
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
 import edu.harvard.iq.dvn.core.util.FileUtil;
 import java.io.File;
 import java.io.FileReader;
@@ -52,6 +54,9 @@ public class StudyFileEditBean implements Serializable {
 
     private static Logger dbgLog = Logger.getLogger(StudyFileEditBean.class.getCanonicalName());
 
+        XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
+    
+    
     /** Creates a new instance of StudyFileEditBean */
     public StudyFileEditBean(StudyFile sf) {
         this.studyFile = sf;
@@ -169,7 +174,11 @@ public class StudyFileEditBean implements Serializable {
     private String tempSystemFileLocation;
     private String controlCardSystemFileLocation;
     private String controlCardType;
+    
+    // the field below is not called by any class
     private String rawDataTempSystemFileLocation;
+    
+    
     private String ingestedSystemFileLocation;
     private boolean deleteFlag;
     private Long sizeFormatted = null;

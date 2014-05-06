@@ -23,6 +23,8 @@
  */
 package edu.harvard.iq.dvn.core.study;
 
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
 import edu.harvard.iq.dvn.core.admin.UserServiceLocal;
 import edu.harvard.iq.dvn.core.admin.VDCUser;
 import edu.harvard.iq.dvn.core.analysis.NetworkDataServiceBean;
@@ -41,6 +43,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Resource;
 import javax.ejb.EJB;
@@ -60,6 +63,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import org.apache.commons.io.FileUtils;
 import java.util.zip.*;
+import org.apache.commons.lang.StringUtils;
 
 /**
  *
@@ -82,6 +86,9 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
 
     private static final Logger logger = Logger.getLogger("edu.harvard.iq.dvn.core.study.StudyFileServiceBean");
 
+    XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
+            
+    String irodsDeterminantToken = "ODUM-IRODS_";
 
     public StudyFile getStudyFile(Long fileId) {
         StudyFile file = em.find(StudyFile.class, fileId);
@@ -360,9 +367,15 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
         addFiles(studyVersion, newFiles, user, ingestEmail, DSBIngestMessage.INGEST_MESAGE_LEVEL_INFO);
     }
 
-    private void addFiles(StudyVersion studyVersion, List<StudyFileEditBean> newFiles, VDCUser user, String ingestEmail, int messageLevel) {
+    private void addFiles(StudyVersion studyVersion, List<StudyFileEditBean> newFiles, 
+            VDCUser user, String ingestEmail, int messageLevel) {
 
         Study study = studyVersion.getStudy();
+        
+        logger.log(Level.INFO, "study:contents check:{0}", xstream.toXML(study));
+        
+        
+        
         MD5Checksum md5Checksum = new MD5Checksum();
 
         // step 1: divide the files, based on subsettable or not
@@ -387,6 +400,10 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             }
         }
 
+        
+        
+        
+        
         if (otherFiles.size()>0) {
              // Only persist the studyVersion we are adding a file that doesn't need to be ingested (non-subsettable)
             if (studyVersion.getId() == null) {
@@ -402,28 +419,103 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             }
 
         }
+        
+        
+        
 
+        // Odum-modified: add a temp-to-irods path
         // step 2: iterate through nonsubsettable files, moving from temp to new location
         File newDir = FileUtil.getStudyFileDir(study);
         iter = otherFiles.iterator();
         while (iter.hasNext()) {
+            
+            
             StudyFileEditBean fileBean = (StudyFileEditBean) iter.next();
+            
+            
+            
             StudyFile f = fileBean.getStudyFile();
             File tempFile = new File(fileBean.getTempSystemFileLocation());
+            
+            // the following line is not applicable for non-local-file-system cases
+            logger.log(Level.INFO, "newDir abs path={0}", newDir.getAbsolutePath());
+            logger.log(Level.INFO, "newDir name={0}", newDir.getName());
+            logger.log(Level.INFO, "f.getFileSystemName()={0}", f.getFileSystemName());
+            
             File newLocationFile = new File(newDir, f.getFileSystemName());
+            
             try {
+                
+                logger.log(Level.INFO, "copying a tempfile to its new destination: abs path:{0}",
+                        newLocationFile.getAbsolutePath());
+                logger.log(Level.INFO, "copying a tempfile to its new destination: name:{0}",
+                        newLocationFile.getName());
+                
+                // the line before is basically for local-file-system cases 
                 FileUtil.copyFile(tempFile, newLocationFile);
+                
+                
+                // here another archiving method would be called
+                
+                logger.log(Level.INFO, 
+                "+++++++++++ irods-storage service would be called here +++++++++++ ");
+                
+                logger.log(Level.INFO, "tempFile:abs path:{0} is to be deleted", 
+                        tempFile.getAbsolutePath());
+                logger.log(Level.INFO, "tempFile:name:{0} is to be deleted", 
+                        tempFile.getName());
+                
                 tempFile.delete();
-                f.setFileSystemLocation(newLocationFile.getAbsolutePath());
+                
+                logger.log(Level.INFO, "the following newlocation saving is basically local-file-system cases");
+                
+                logger.log(Level.INFO, "newLocationFile.getAbsolutePath()={0}",
+                        newLocationFile.getAbsolutePath());
+                // for irods cases, start like this:
+                // irods://irods@iodum1.irss.unc.edu%3A1247/odumMain/home/irods/1902.29/ODUM-IRODS_11518
+                String irodsDeterminant = study.getStudyId();
+                
+                
+                
+                if (StringUtils.isNotEmpty(irodsDeterminant)){
+                    logger.log(Level.INFO, "studyId={0}", study.getStudyId());
+                    
+                    if (irodsDeterminant.startsWith(irodsDeterminantToken)){
+                        // irods-specific processing
+                        logger.log(Level.INFO, "this study is an IRODs-related one:{0}",
+                                irodsDeterminant);
+                        String irodsURLtemplate= "irods://";
+                        StringBuilder sb = new StringBuilder(irodsURLtemplate);
+                        sb.append("_server_name:1247/odumMain/home/irods/_auth_/_study_id_/_file_name");
+                        logger.log(Level.INFO, "irods file location to be ={0}", sb.toString());
+                        
+                        f.setFileSystemLocation(newLocationFile.getAbsolutePath());
+                    } else {
+                        // not idrods 
+                        logger.log(Level.INFO, "this study is NOT an IRODs-related one:{0}",
+                                irodsDeterminant);
+                        
+                
+                        f.setFileSystemLocation(newLocationFile.getAbsolutePath());
+                    }
+                }
 
+
+                logger.log(Level.INFO, "studyVersion={0}", studyVersion);
                 fileBean.getFileMetadata().setStudyVersion( studyVersion );
+                
 
+                logger.log(Level.INFO, "StudyFileEditBean fileBean={0}", xstream.toXML(fileBean));
+                
                 em.persist(fileBean.getStudyFile());
                 em.persist(fileBean.getFileMetadata());
 
             } catch (IOException ex) {
                 throw new EJBException(ex);
             }
+            
+            
+            
             f.setMd5(md5Checksum.CalculateMD5(f.getFileSystemLocation()));
         }
 

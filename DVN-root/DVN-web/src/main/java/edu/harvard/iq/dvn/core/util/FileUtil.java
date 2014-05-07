@@ -52,6 +52,7 @@ import java.util.logging.*;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import org.apache.commons.lang.StringUtils;
 
 /**
  *
@@ -336,6 +337,19 @@ public class FileUtil implements java.io.Serializable  {
              file.mkdirs();
         }
         return file;
+    }
+    
+    
+    // Odum added
+    public static File getModeShapeConfigFile(){
+        String modeshapeConfigFile = System.getProperty("dvn.modeshape.config.file");
+        if (StringUtils.isNotBlank(modeshapeConfigFile)){
+            
+            return  new File(modeshapeConfigFile);
+        } else {
+            throw new EJBException("System property \"dvn.modeshape.config.file\" has not been set.");
+        }
+    
     }
     
     

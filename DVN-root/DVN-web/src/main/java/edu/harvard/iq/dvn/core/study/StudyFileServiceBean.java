@@ -29,14 +29,16 @@ import edu.harvard.iq.dvn.core.admin.UserServiceLocal;
 import edu.harvard.iq.dvn.core.admin.VDCUser;
 import edu.harvard.iq.dvn.core.analysis.NetworkDataServiceBean;
 import edu.harvard.iq.dvn.core.mail.MailServiceLocal;
+import edu.harvard.iq.dvn.core.storage.IrodsStorageServiceBean;
 import edu.harvard.iq.dvn.core.util.FileUtil;
 import edu.harvard.iq.dvn.core.web.util.MD5Checksum;
 import edu.harvard.iq.dvn.ingest.dsb.DSBIngestMessage;
 import edu.harvard.iq.dvn.ingest.dsb.DSBWrapper;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.*;
 import javax.annotation.Resource;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
@@ -62,7 +65,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import org.apache.commons.io.FileUtils;
-import java.util.zip.*;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -83,6 +85,9 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
     @EJB UserServiceLocal userService;
     @EJB MailServiceLocal mailService;
     @EJB StudyServiceLocal studyService;
+    
+    @EJB
+    IrodsStorageServiceBean irodsStorageService;
 
     private static final Logger logger = Logger.getLogger("edu.harvard.iq.dvn.core.study.StudyFileServiceBean");
 
@@ -372,7 +377,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
 
         Study study = studyVersion.getStudy();
         
-        logger.log(Level.INFO, "study:contents check:{0}", xstream.toXML(study));
+        logger.log(Level.FINEST, "study:contents check:{0}", xstream.toXML(study));
         
         
         
@@ -438,6 +443,11 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             File tempFile = new File(fileBean.getTempSystemFileLocation());
             
             // the following line is not applicable for non-local-file-system cases
+            // authority: TEST or 1902.4 etc.
+            logger.log(Level.INFO, "study:auth={0}", study.getAuthority());
+            logger.log(Level.INFO, "study:studyId={0}", study.getStudyId());
+            logger.log(Level.INFO, "tempFile:abs path={0}", tempFile.getAbsolutePath());
+            logger.log(Level.INFO, "tempFile:filename={0}", tempFile.getName());
             logger.log(Level.INFO, "newDir abs path={0}", newDir.getAbsolutePath());
             logger.log(Level.INFO, "newDir name={0}", newDir.getName());
             logger.log(Level.INFO, "f.getFileSystemName()={0}", f.getFileSystemName());
@@ -451,7 +461,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 logger.log(Level.INFO, "copying a tempfile to its new destination: name:{0}",
                         newLocationFile.getName());
                 
-                // the line before is basically for local-file-system cases 
+                // the line below is basically for local-file-system cases 
                 FileUtil.copyFile(tempFile, newLocationFile);
                 
                 
@@ -484,10 +494,26 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         // irods-specific processing
                         logger.log(Level.INFO, "this study is an IRODs-related one:{0}",
                                 irodsDeterminant);
-                        String irodsURLtemplate= "irods://";
-                        StringBuilder sb = new StringBuilder(irodsURLtemplate);
-                        sb.append("_server_name:1247/odumMain/home/irods/_auth_/_study_id_/_file_name");
+                        
+                        
+                        String storageDir = study.getAuthority()+"/"+study.getStudyId();
+                        String irodsProtocol= "irods://";
+                        String portNumber ="1247";
+                        String irodsServerName = "_server_name_";
+                        String irodsStorageRootDir = "/odumMain/home/irods";
+                        StringBuilder sb = new StringBuilder(irodsProtocol);
+                        sb.append(irodsServerName).append(":").append(portNumber);
+                        sb.append(irodsStorageRootDir);
+                        sb.append("/").append(storageDir);
+                        sb.append("/").append(f.getFileSystemName());
+                        
                         logger.log(Level.INFO, "irods file location to be ={0}", sb.toString());
+                        InputStream is = new FileInputStream(tempFile);
+                        // 1st arg:dir
+                        // 2nd arg: file name
+                        // 3rd arg: InputStream
+                        //irodsStorageService.saveFile(storageDir, f.getFileSystemName(), is);
+                        
                         
                         f.setFileSystemLocation(newLocationFile.getAbsolutePath());
                     } else {
@@ -505,7 +531,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 fileBean.getFileMetadata().setStudyVersion( studyVersion );
                 
 
-                logger.log(Level.INFO, "StudyFileEditBean fileBean={0}", xstream.toXML(fileBean));
+                logger.log(Level.FINEST, "StudyFileEditBean fileBean={0}", xstream.toXML(fileBean));
                 
                 em.persist(fileBean.getStudyFile());
                 em.persist(fileBean.getFileMetadata());

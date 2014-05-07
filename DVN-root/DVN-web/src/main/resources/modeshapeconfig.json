@@ -1,0 +1,46 @@
+ {
+    "name" : "irodsRepo",
+    "jndiName" : "",
+    "workspaces" : {
+        "predefined" : ["otherWorkspace"],
+        "default" : "default",
+        "allowCreation" : true
+    },
+    "security" : {
+        "anonymous" : {
+            "roles" : ["readonly","readwrite","admin"],
+            "useOnFailedLogin" : false
+        }
+    },
+    "storage" : {
+        "cacheConfiguration" : "/glassfish3/glassfish/domains/domain1/config/infinispan.xml",
+        "cacheName" : "persistentRepository",
+        "binaryStorage" : {
+            "type" : "file",
+            "directory": "/tmp/modeshape/dataverse/3.6.2/binaries",
+            "minimumBinarySizeInBytes" : 0
+        }
+    },
+    "externalSources" : {
+        "irods" : {
+            "classname" : "org.irods.jargon.modeshape.connector.IRODSWriteableConnector",
+            "directoryPath" : "/odumMain/home/irods",
+            "projections" : ["default:/irodsGrid => /"],
+            "readOnly" : false,
+            "addMimeTypeMixin" : false,
+             "cacheTtlSeconds" : 30,
+            "exclusionPattern" : ".+[.]tmp$"
+        }
+    } ,
+       "query" : {
+        "enabled" : false,
+        "indexing" : {
+            "rebuildOnStartup": {
+                "when" : "never"
+              }
+            }
+         },
+    
+    "node-types" : ["/glassfish3/glassfish/domains/domain1/config/irods.cnd"]
+         
+}

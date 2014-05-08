@@ -117,7 +117,13 @@ public class StudyServiceBean implements edu.harvard.iq.dvn.core.study.StudyServ
     StudyExporterFactoryLocal studyExporterFactory;
     @EJB
     MailServiceLocal mailService;
-    private static final Logger logger = Logger.getLogger("edu.harvard.iq.dvn.core.study.StudyServiceBean");
+    
+    
+    private static final Logger logger = 
+            Logger.getLogger("edu.harvard.iq.dvn.core.study.StudyServiceBean");
+    
+    
+    
     private static final SimpleDateFormat exportLogFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss");
     @EJB
     StudyServiceLocal studyService; // used to force new transaction during import
@@ -1212,8 +1218,13 @@ public class StudyServiceBean implements edu.harvard.iq.dvn.core.study.StudyServ
      *  Check that a studyId entered by the user is unique (not currently used for any other study in this Dataverse Network)
      */
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-    public boolean isUniqueStudyId(String userStudyId, String protocol, String authority) {
+    public boolean isUniqueStudyId(String userStudyId, 
+            String protocol, String authority) {
 
+        logger.log(Level.INFO, "++++++++++++++ StudyServiceBean: isUniqueStudyId() is called ++++++++++++++");
+        logger.log(Level.INFO, "protocol={0}", protocol);
+        logger.log(Level.INFO, "authority={0}", authority);
+        logger.log(Level.INFO, "userStudyId={0}", userStudyId);
         String queryStr = "SELECT s from Study s where s.studyId = :studyId  and s.protocol= :protocol and s.authority= :authority";
 
         Study study = null;

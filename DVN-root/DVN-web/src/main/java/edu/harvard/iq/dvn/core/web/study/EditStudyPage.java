@@ -78,6 +78,8 @@ import edu.harvard.iq.dvn.core.study.StudyField;
 import edu.harvard.iq.dvn.core.study.StudyFieldValue;
 import edu.harvard.iq.dvn.core.study.TemplateServiceLocal;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.faces.bean.ViewScoped;
 import javax.faces.context.FacesContext;
 import javax.faces.event.ActionEvent;
@@ -104,6 +106,12 @@ import javax.servlet.http.HttpServletRequest;
 @ViewScoped
 @EJB(name="editStudy", beanInterface=edu.harvard.iq.dvn.core.study.EditStudyService.class)
 public class EditStudyPage extends VDCBaseBean implements java.io.Serializable  {
+    
+    
+    private static final Logger logger = Logger.getLogger(EditStudyPage.class.getName());
+    
+    
+    
     EditStudyService editStudyService;
     @EJB StudyServiceLocal studyService;
     @EJB TemplateServiceLocal templateService;
@@ -2369,9 +2377,13 @@ public class EditStudyPage extends VDCBaseBean implements java.io.Serializable  
         if (isValidateRequired()) {
             String studyId = (String)value;
             FacesMessage message=null;
+            logger.log(Level.INFO, "studyId={0} is going to be checked", studyId);
             if (!studyService.isUniqueStudyId(studyId, study.getProtocol(),study.getAuthority())) {
+                logger.log(Level.INFO, "studyId={0} is NOT unique", studyId);
                 valid=false;
                 message = new FacesMessage("Study ID is already used in this dataverse.");
+            } else {
+                logger.log(Level.INFO, "studyId={0} is unique", studyId);
             }
             if (valid) {
                 if (!studyService.isValidStudyIdString(studyId)) {

@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.*;
@@ -495,11 +496,12 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         logger.log(Level.INFO, "this study is an IRODs-related one:{0}",
                                 irodsDeterminant);
                         
+                        Properties irodsConfigParams = FileUtil.getIRODSPropertiesFile();
                         
                         String storageDir = study.getAuthority()+"/"+study.getStudyId();
                         String irodsProtocol= "irods://";
-                        String portNumber ="1247";
-                        String irodsServerName = "_server_name_";
+                        String portNumber = irodsConfigParams.getProperty("port");
+                        String irodsServerName = irodsConfigParams.getProperty("host");
                         String irodsStorageRootDir = "/odumMain/home/irods";
                         StringBuilder sb = new StringBuilder(irodsProtocol);
                         sb.append(irodsServerName).append(":").append(portNumber);
@@ -507,8 +509,10 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         sb.append("/").append(storageDir);
                         sb.append("/").append(f.getFileSystemName());
                         
-                        logger.log(Level.INFO, "irods file location to be ={0}", sb.toString());
-                        InputStream is = new FileInputStream(tempFile);
+                        logger.log(Level.INFO, "irods file location to be ={0}",
+                                sb.toString());
+                        // tempFiles has been deleted
+                        InputStream is = new FileInputStream(newLocationFile.getAbsolutePath());
                         // 1st arg:dir
                         // 2nd arg: file name
                         // 3rd arg: InputStream

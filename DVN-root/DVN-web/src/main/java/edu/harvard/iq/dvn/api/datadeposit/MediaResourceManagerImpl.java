@@ -234,7 +234,7 @@ public class MediaResourceManagerImpl implements MediaResourceManager {
                 logger.info("problem looking up editStudyService");
                 throw new SwordServerException("problem looking up editStudyService");
             }
-            logger.fine("looking up study with globalId " + globalId);
+            logger.info("looking up study with globalId " + globalId);
             Study study = editStudyService.getStudyByGlobalId(globalId);
             if (study == null) {
                 throw new SwordError(UriRegistry.ERROR_BAD_REQUEST, "Could not find study with global ID of " + globalId);

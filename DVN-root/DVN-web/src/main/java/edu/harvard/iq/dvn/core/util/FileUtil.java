@@ -39,11 +39,13 @@ import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.Properties;
 import java.util.ResourceBundle;
 import javax.activation.MimetypesFileTypeMap;
 import javax.ejb.EJBException;
@@ -60,7 +62,7 @@ import org.apache.commons.lang.StringUtils;
  */
 public class FileUtil implements java.io.Serializable  {
     
-    private static Logger dbgLog = Logger.getLogger(FileUtil.class.getCanonicalName());
+    private static Logger logger = Logger.getLogger(FileUtil.class.getCanonicalName());
 
     private static final String[] SUBSETTABLE_FORMAT_SET = {"POR", "SAV", "DTA", "RDA"};
 
@@ -147,19 +149,19 @@ public class FileUtil implements java.io.Serializable  {
     
     private static String determineFileType(File f, String fileName) throws IOException{
         String fileType = null;
-        dbgLog.fine("***** within FileUtil: determineFileType(File, String) ******");
+        logger.fine("***** within FileUtil: determineFileType(File, String) ******");
         
         // step 1: check whether the file is subsettable
-        dbgLog.fine("before SubsettableFileChecker constructor");
+        logger.fine("before SubsettableFileChecker constructor");
         SubsettableFileChecker sfchk = new SubsettableFileChecker(SUBSETTABLE_FORMAT_SET);
         
-        dbgLog.fine("f: abs path="+f.getAbsolutePath());
+        logger.fine("f: abs path="+f.getAbsolutePath());
         fileType = sfchk.detectSubsettableFormat(f);
         
-        dbgLog.info("determineFileType: subs. checker found "+fileType);
+        logger.info("determineFileType: subs. checker found "+fileType);
         
         String fileExtension = getFileExtension(fileName);
-        dbgLog.fine("fileExtension="+fileExtension);
+        logger.fine("fileExtension="+fileExtension);
         
         // step 2: If not found, check if graphml or FITS
         if (fileType==null) {
@@ -177,13 +179,13 @@ public class FileUtil implements java.io.Serializable  {
             }
         }
        
-        dbgLog.fine("before jhove");
+        logger.fine("before jhove");
         // step 3: check the mime type of this file with Jhove
         if (fileType == null){
             JhoveWrapper jw = new JhoveWrapper();
             fileType = jw.getFileMimeType(f);
         }
-        dbgLog.fine("after jhove");
+        logger.fine("after jhove");
         // step 3: handle Jhove fileType (if we have an extension)
         // if text/plain and syntax file, replace the "plain" part
         // if application/octet-stream, check for mime type by extension
@@ -197,11 +199,11 @@ public class FileUtil implements java.io.Serializable  {
             } else if (fileType.equals("application/octet-stream")) {
                 fileType = determineFileType(fileName);
             }
-            dbgLog.fine("non-null fileType="+fileType);
+            logger.fine("non-null fileType="+fileType);
         } else {
-            dbgLog.fine("fileExtension is null");
+            logger.fine("fileExtension is null");
         }
-        dbgLog.fine("returning fileType "+fileType);
+        logger.fine("returning fileType "+fileType);
         return fileType;
     }
         
@@ -353,6 +355,70 @@ public class FileUtil implements java.io.Serializable  {
     }
     
     
+    public static Properties getIRODSPropertiesFile() {
+
+        Properties gfJvmProps = System.getProperties();
+        Properties irodslConfigProps = new Properties();
+
+        if (gfJvmProps.containsKey("dvn.irods.config.file")) {
+            String irodsConfigFileName
+                    = gfJvmProps.getProperty("dvn.irods.config.file");
+
+            if (StringUtils.isNotBlank(irodsConfigFileName)) {
+                // load the configuration file
+                logger.log(Level.INFO, "irodsConfigFileName={0}", irodsConfigFileName);
+
+                InputStream is = null;
+//                File irodsConfigFile = null;
+                
+                try {
+//                    irodsConfigFile = new File(irodsConfigFileName);
+                    is = new FileInputStream(new File(irodsConfigFileName));
+                    
+                    irodslConfigProps.load(is);
+
+                    for (String key : irodslConfigProps.stringPropertyNames()) {
+                        logger.log(Level.INFO,
+                                "key={0}:value={0}", new Object[]{key,
+                                    irodslConfigProps.getProperty(key)});
+                    }
+
+//
+//                } catch (FileNotFoundException ex) {
+//                    log.warn("specified config file was not found", ex);
+                } catch (IOException ex) {
+                    logger.log(Level.SEVERE, "IO error occurred", ex);
+                } finally {
+                    if (is != null) {
+                        try {
+                            is.close();
+                        } catch (IOException ex) {
+                            logger.log(Level.WARNING, "failed to close the opened local config file", ex);
+                        }
+                    }
+                }
+
+            } else {
+                // irodsConfigFileName is null or empty
+                logger.log(Level.WARNING, "irodsConfigFileName is null or empty");
+            }
+        } else {
+            // no entry within jvm options
+            logger.log(Level.WARNING, "dvn.irods.config.file is not included in the JVM options");
+
+        }
+        return irodslConfigProps;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
      public static File createTempFile(String sessionId, String originalFileName) throws Exception{ 
         String filePathDir = System.getProperty("vdc.temp.file.dir");
         if (filePathDir != null) {
@@ -390,7 +456,7 @@ public class FileUtil implements java.io.Serializable  {
 
        private static boolean isGraphMLFile(File file) {
         boolean isGraphML = false;
-        dbgLog.fine("begin isGraphMLFile()");
+        logger.fine("begin isGraphMLFile()");
         try{
             FileReader fileReader = new FileReader(file);
             javax.xml.stream.XMLInputFactory xmlif = javax.xml.stream.XMLInputFactory.newInstance();
@@ -401,9 +467,9 @@ public class FileUtil implements java.io.Serializable  {
                 if (event == XMLStreamConstants.START_ELEMENT) {
                     if (xmlr.getLocalName().equals("graphml")) {
                         String schema = xmlr.getAttributeValue("http://www.w3.org/2001/XMLSchema-instance", "schemaLocation");
-                        dbgLog.fine("schema = "+schema);
+                        logger.fine("schema = "+schema);
                         if (schema!=null && schema.indexOf("http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd")!=-1){
-                            dbgLog.fine("graphML is true");
+                            logger.fine("graphML is true");
                             isGraphML = true;
                         }
                     }
@@ -411,12 +477,12 @@ public class FileUtil implements java.io.Serializable  {
                 }
             }
         } catch(XMLStreamException e) {
-            dbgLog.fine("XML error - this is not a valid graphML file.");
+            logger.fine("XML error - this is not a valid graphML file.");
             isGraphML = false;
         } catch(IOException e) {
             throw new EJBException(e);
         }
-        dbgLog.fine("end isGraphML()");
+        logger.fine("end isGraphML()");
         return isGraphML;
     }
        

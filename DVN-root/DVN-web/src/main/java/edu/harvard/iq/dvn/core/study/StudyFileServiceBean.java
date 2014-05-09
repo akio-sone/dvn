@@ -516,8 +516,13 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         // 1st arg:dir
                         // 2nd arg: file name
                         // 3rd arg: InputStream
-                        //irodsStorageService.saveFile(storageDir, f.getFileSystemName(), is);
-                        
+                        logger.log(Level.INFO, "storageDir={0}", storageDir);
+                        logger.log(Level.INFO, "f.getFileSystemName()={0}", 
+                                f.getFileSystemName());
+                                                logger.log(Level.INFO, "uploading the file to the irods started");
+                        irodsStorageService.saveFile(storageDir, 
+                                f.getFileSystemName(), is);
+                        logger.log(Level.INFO, "uploading the file to the irods ended");
                         
                         f.setFileSystemLocation(newLocationFile.getAbsolutePath());
                     } else {

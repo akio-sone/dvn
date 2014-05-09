@@ -379,7 +379,7 @@ public class FileUtil implements java.io.Serializable  {
 
                     for (String key : irodslConfigProps.stringPropertyNames()) {
                         logger.log(Level.INFO,
-                                "key={0}:value={0}", new Object[]{key,
+                                "key={0}:value={1}", new Object[]{key,
                                     irodslConfigProps.getProperty(key)});
                     }
 

@@ -54,7 +54,7 @@ public class StudyFileEditBean implements Serializable {
 
     private static Logger dbgLog = Logger.getLogger(StudyFileEditBean.class.getCanonicalName());
 
-        XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
+        //XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
     
     
     /** Creates a new instance of StudyFileEditBean */

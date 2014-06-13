@@ -220,6 +220,7 @@ public class MediaResourceManagerImpl implements MediaResourceManager {
     }
 
     DepositReceipt replaceOrAddFiles(String uri, Deposit deposit, AuthCredentials authCredentials, SwordConfiguration swordConfiguration, boolean shouldReplace) throws SwordError, SwordAuthException, SwordServerException {
+        logger.log(Level.INFO, "+++++++++++++ MediaResourceManagerImpl: replaceOrAddFiles starts here +++++++++++++");
         VDCUser vdcUser = swordAuth.auth(authCredentials);
 
         urlManager.processUrl(uri);
@@ -234,7 +235,7 @@ public class MediaResourceManagerImpl implements MediaResourceManager {
                 logger.info("problem looking up editStudyService");
                 throw new SwordServerException("problem looking up editStudyService");
             }
-            logger.info("looking up study with globalId " + globalId);
+            logger.log(Level.INFO, "looking up study with globalId={0}", globalId);
             Study study = editStudyService.getStudyByGlobalId(globalId);
             if (study == null) {
                 throw new SwordError(UriRegistry.ERROR_BAD_REQUEST, "Could not find study with global ID of " + globalId);
@@ -247,6 +248,7 @@ public class MediaResourceManagerImpl implements MediaResourceManager {
             Long studyId;
             try {
                 studyId = study.getId();
+                logger.log(Level.INFO, "studyId={0}", studyId);
             } catch (NullPointerException ex) {
                 throw new SwordError(UriRegistry.ERROR_BAD_REQUEST, "couldn't find study with global ID of " + globalId);
             }
@@ -328,7 +330,7 @@ public class MediaResourceManagerImpl implements MediaResourceManager {
                         if (!zEntry.isDirectory()) {
 
                             String fileEntryName = zEntry.getName();
-                            logger.fine("file found: " + fileEntryName);
+                            logger.log(Level.INFO, "file found: ={0}", fileEntryName);
 
                             String dirName = null;
                             String finalFileName = null;
@@ -404,7 +406,9 @@ public class MediaResourceManagerImpl implements MediaResourceManager {
 //                        logger.fine("Unable to delete " + uploadDir.getAbsolutePath());
 //                    }
                 }
+                
                 if (fbList.size() > 0) {
+                    logger.log(Level.INFO, "fbList:size={0}", fbList.size());
 //                    StudyFileServiceLocal studyFileService;
 //                    try {
 //                        studyFileService = (StudyFileServiceLocal) ctx.lookup("java:comp/env/studyFileService");
@@ -413,13 +417,23 @@ public class MediaResourceManagerImpl implements MediaResourceManager {
 //                        throw new SwordServerException("problem looking up studyFileService");
 //                    }
                     try {
+                        logger.log(Level.INFO, "calling StudyFileService: addFiles method");
+                        logger.log(Level.INFO, "current study version ={0}", study.getLatestVersion());
                         studyFileService.addFiles(study.getLatestVersion(), fbList, vdcUser);
+                        
+                        
+                        
                     } catch (EJBException ex) {
                         throw new SwordError(UriRegistry.ERROR_BAD_REQUEST, "Unable to add file(s) to study: " + ex.getMessage());
                     }
+                    
+                    
                     ReceiptGenerator receiptGenerator = new ReceiptGenerator();
                     String baseUrl = urlManager.getHostnamePlusBaseUrlPath(uri);
                     DepositReceipt depositReceipt = receiptGenerator.createReceipt(baseUrl, study);
+                    
+                    
+                    logger.log(Level.INFO, "+++++++++++++ leaving MediaResourceManagerImpl: replaceOrAddFiles");
                     return depositReceipt;
                 } else {
                     throw new SwordError(UriRegistry.ERROR_BAD_REQUEST, "Problem with zip file '" + uploadedZipFilename + "'. Number of files unzipped: " + fbList.size());
@@ -430,6 +444,8 @@ public class MediaResourceManagerImpl implements MediaResourceManager {
         } else {
             throw new SwordError(UriRegistry.ERROR_BAD_REQUEST, "Unable to determine target type or identifier from URL: " + uri);
         }
+        
+        
     }
 
     // copied from AddFilesPage

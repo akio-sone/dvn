@@ -18,7 +18,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <netbeans.hint.deploy.server>gfv3ee6</netbeans.hint.deploy.server>
         
-        <jargon.version>3.3.3-SNAPSHOT</jargon.version>
+        <jargon.version>3.3.5-SNAPSHOT</jargon.version>
         
     </properties>
       

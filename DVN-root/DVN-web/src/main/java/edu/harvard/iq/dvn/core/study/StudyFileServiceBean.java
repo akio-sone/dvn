@@ -92,7 +92,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
 
     private static final Logger logger = Logger.getLogger("edu.harvard.iq.dvn.core.study.StudyFileServiceBean");
 
-    XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
+    //XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
             
     String irodsDeterminantToken = "ODUM-IRODS_";
 
@@ -375,10 +375,12 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
 
     private void addFiles(StudyVersion studyVersion, List<StudyFileEditBean> newFiles, 
             VDCUser user, String ingestEmail, int messageLevel) {
+        
+        logger.log(Level.INFO, "++++++++++++++++ StudyFileServiceBean: addFiles: starts here ");
 
         Study study = studyVersion.getStudy();
         
-        logger.log(Level.FINEST, "study:contents check:{0}", xstream.toXML(study));
+        //logger.log(Level.FINEST, "study:contents check:{0}", xstream.toXML(study));
         
         
         
@@ -396,8 +398,11 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             // processed asynchronously, and the user will be notified by email.
             // - L.A.
             if (fileBean.getStudyFile().isSubsettable() || fileBean.getStudyFile() instanceof SpecialOtherFile) {
+                
+                logger.log(Level.INFO, "This is a subsettable case: subsettableFiles.add() is called");
                 subsettableFiles.add(fileBean);
             } else {
+                logger.log(Level.INFO, "This is NOT a subsettable case");
                 otherFiles.add(fileBean);
                 // also add to study, so that it will be flushed for the ids
                 fileBean.getStudyFile().setStudy(study);
@@ -434,6 +439,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
         File newDir = FileUtil.getStudyFileDir(study);
         iter = otherFiles.iterator();
         while (iter.hasNext()) {
+            logger.log(Level.INFO, "working on non-subsettable cases");
             
             
             StudyFileEditBean fileBean = (StudyFileEditBean) iter.next();
@@ -540,7 +546,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 fileBean.getFileMetadata().setStudyVersion( studyVersion );
                 
 
-                logger.log(Level.FINEST, "StudyFileEditBean fileBean={0}", xstream.toXML(fileBean));
+                //logger.log(Level.FINEST, "StudyFileEditBean fileBean={0}", xstream.toXML(fileBean));
                 
                 em.persist(fileBean.getStudyFile());
                 em.persist(fileBean.getFileMetadata());
@@ -556,6 +562,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
 
         // step 3: iterate through subsettable files, sending a message via JMS
         if (subsettableFiles.size() > 0) {
+            logger.log(Level.INFO, "working on subsettable files");
             QueueConnection conn = null;
             QueueSession session = null;
             QueueSender sender = null;
@@ -581,6 +588,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
 
                 String detail = "Ingest processing for " + subsettableFiles.size() + " file(s).";
                 studyService.addStudyLock(study.getId(), user.getId(), detail);
+                
                 try {
                     sender.send(message);
                 } catch (Exception ex) {
@@ -692,6 +700,11 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         f.setFileType("text/tab-separated-values");
                     }
                     f.setFileSystemLocation(newIngestedLocationFile.getAbsolutePath());
+                    
+                    
+                    
+                    // TODO: copy these files to the IRODS
+                    
 
                 } catch (IOException ex) {
                     throw new EJBException(ex);
@@ -720,7 +733,10 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 File tempOriginalFile = new File(fileBean.getTempSystemFileLocation());
                 File newOriginalLocationFile = new File(newDir, "_" + f.getFileSystemName());
                 try {
+                    
+                    
                     if (fileBean.getControlCardSystemFileLocation() != null && fileBean.getControlCardType() != null) {
+                        logger.log(Level.INFO, "addIngestedFiles: 2a case");
                         // 2a. For the control card-based ingests (SPSS and DDI), we save
                         // a zipped bundle of both the card and the raw data file
                         // (TAB-delimited or CSV):
@@ -781,8 +797,13 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                     } else {
                         // 2b. Otherwise, simply store the data that was used for
                         // ingest as the original:
-
+                        logger.log(Level.INFO, "addIngestedFiles: 2b case");
                         FileUtil.copyFile(tempOriginalFile, newOriginalLocationFile);
+                        
+                        // TODO: IRODS case here
+                        
+                        
+                        
                         f.setOriginalFileType(originalFileType);
                         f.setMd5(md5Checksum.CalculateMD5(newOriginalLocationFile.getAbsolutePath()));
                     }
@@ -794,10 +815,25 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             // "Special" OtherFiles are still OtherFiles; we just add the file
             // uploaded by the user to the study as is:
                 
+                logger.log(Level.INFO, "addIngestedFiles: sepcial case");
+                
                 File tempIngestedFile = new File(fileBean.getTempSystemFileLocation());
                 newIngestedLocationFile = new File(newDir, f.getFileSystemName());
                 try {
                     FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
+                    
+                    // TODO: IRODS case  here
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
                     tempIngestedFile.delete();
                     f.setFileSystemLocation(newIngestedLocationFile.getAbsolutePath());
                     f.setMd5(md5Checksum.CalculateMD5(newIngestedLocationFile.getAbsolutePath()));

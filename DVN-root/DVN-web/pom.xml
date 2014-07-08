@@ -671,6 +671,20 @@
                     <include>META-INF/services/*.*</include>
                 </includes>
             </resource>
+            <resource>
+                <directory>src/main/java/edu/harvard/iq/dvn/core/web/subsetting</directory>
+                <targetPath>edu/harvard/iq/dvn/core/web/subsetting</targetPath>
+                <includes>
+                    <include>*.R</include>
+                    <include>*.css</include>
+                    <include>README</include>
+                </includes>
+            </resource>
+            
+            
+            
+            
+            
         </resources>
 
         <plugins>

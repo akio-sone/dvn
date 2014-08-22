@@ -46,6 +46,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.ActivationConfigProperty;
 import javax.ejb.EJB;
 import javax.ejb.MessageDriven;
@@ -72,7 +74,7 @@ public class DSBIngestMessageBean implements MessageListener {
     @EJB IndexServiceLocal indexService;
     NetworkDataServiceLocal networkDataService;
 
-    
+    private static final Logger logger = Logger.getLogger(DSBIngestMessageBean.class.getName());
     /**
      * Creates a new instance of DSBIngestMessageBean
      */
@@ -91,7 +93,7 @@ public class DSBIngestMessageBean implements MessageListener {
             ObjectMessage om = (ObjectMessage) message;
             ingestMessage = (DSBIngestMessage) om.getObject();
             String detail = "Ingest processing for " +ingestMessage.getFileBeans().size() + " file(s).";
-                      
+            logger.log(Level.INFO, "DSBIngestMessageBean#onMessage: detail={0}", detail);
             Iterator iter = ingestMessage.getFileBeans().iterator();
             while (iter.hasNext()) {
                 StudyFileEditBean fileBean = (StudyFileEditBean) iter.next();
@@ -99,15 +101,20 @@ public class DSBIngestMessageBean implements MessageListener {
                 try {
                     if (fileBean.getStudyFile() instanceof NetworkDataFile ) {
                         // ELLEN TODO:  move this logic into SDIOReader component
-
+                        logger.log(Level.INFO, "DSBIngestMessageBean#onMessage: NetworkDataFile case");
                         Context ctx = new InitialContext();
                         networkDataService = (NetworkDataServiceLocal) ctx.lookup("java:comp/env/networkData");
                         networkDataService.ingest(fileBean);
                         successfulFiles.add(fileBean);
                     } else if (fileBean.getStudyFile() instanceof SpecialOtherFile) {
+                        
+                        logger.log(Level.INFO, "DSBIngestMessageBean#onMessage: SpecialOtherFile case");
+                        
+                        
                         new DSBWrapper().ingestSpecialOther(fileBean);
                         successfulFiles.add(fileBean);
                     } else {
+                        logger.log(Level.INFO, "DSBIngestMessageBean#onMessage: none-of-the-above case");
                         parseXML( new DSBWrapper().ingest(fileBean) , fileBean.getFileMetadata() );
                         successfulFiles.add(fileBean);
                     }

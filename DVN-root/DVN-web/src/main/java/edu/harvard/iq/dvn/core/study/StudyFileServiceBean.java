@@ -594,6 +594,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 } catch (Exception ex) {
                     // If anything goes wrong, remove the study lock.
                     studyService.removeStudyLock(study.getId());
+                    logger.log(Level.INFO, "ingest of this subsetable file went wrong", ex);
                     ex.printStackTrace();
                 }
 

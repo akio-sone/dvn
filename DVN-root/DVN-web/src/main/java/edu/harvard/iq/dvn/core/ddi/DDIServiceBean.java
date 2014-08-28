@@ -310,7 +310,10 @@ public class DDIServiceBean implements DDIServiceLocal {
         OutputStreamWriter out = null;
         XMLStreamWriter xmlw = null;
 
+        logger.log(Level.INFO, "Odum-TBM: [exportOriginalDDIPlus] set up the study node");
         File studyDir = new File(FileUtil.getStudyFileDir(), sv.getStudy().getAuthority() + File.separator + sv.getStudy().getStudyId());
+        
+        logger.log(Level.INFO, "Odum-TBM: [exportOriginalDDIPlus] set up the full-path");
         File originalImport = new File(studyDir, "original_imported_study.xml");
 
         if (originalImport.exists()) {

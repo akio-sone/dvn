@@ -655,7 +655,9 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
         
         VDCUser user = userService.find(userId);
 
+        logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles] set up path to the study-node");
         File newDir = new File(FileUtil.getStudyFileDir(), study.getAuthority() + File.separator + study.getStudyId());
+        
         if (!newDir.exists()) {
             newDir.mkdirs();
         }
@@ -693,36 +695,67 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 // 1. move ingest-created file:
                 
                 File tempIngestedFile = new File(fileBean.getIngestedSystemFileLocation());
+                
+                logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles] set up the full path to the ingested file");
+                
                 newIngestedLocationFile = new File(newDir, f.getFileSystemName());
+                
+                
+                
                 try {
+                    
+                    
+                    
+                    // TODO: copy these files to the IRODS
+                    logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles] copy the study dir to the irods node");
+                    
                     FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
+                    
+                    
+                    
                     tempIngestedFile.delete();
                     if (f instanceof TabularDataFile ){
                         f.setFileType("text/tab-separated-values");
                     }
                     f.setFileSystemLocation(newIngestedLocationFile.getAbsolutePath());
                     
-                    
-                    
-                    // TODO: copy these files to the IRODS
+
                     
 
                 } catch (IOException ex) {
                     throw new EJBException(ex);
                 }
+                
                 // 1b. If this is a NetworkDataFile,  move the SQLite file from the temp Ingested location to the system location
                 if (f instanceof NetworkDataFile) {
+                    
+                    // origin
                     File tempSQLDataFile = new File(tempIngestedFile.getParent(), FileUtil.replaceExtension(tempIngestedFile.getName(),NetworkDataServiceBean.SQLITE_EXTENSION));
+                    
+                    // destination
                     File newSQLDataFile = new File(newDir, f.getFileSystemName()+"."+NetworkDataServiceBean.SQLITE_EXTENSION);
 
+                    // origin
                     File tempNeo4jDir =  new File(tempIngestedFile.getParent(), FileUtil.replaceExtension(tempIngestedFile.getName(),NetworkDataServiceBean.NEO4J_EXTENSION));
+                    
+                    // destination
                     File newNeo4jDir = new File(newDir, f.getFileSystemName()+"."+NetworkDataServiceBean.NEO4J_EXTENSION);
                     
                     try {
+                        // TODO:
+                        
+                    logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles] copy these two to the irods node");
+                    
+                        
+                        
                         FileUtil.copyFile(tempSQLDataFile, newSQLDataFile);
+                        
                         FileUtils.copyDirectory(tempNeo4jDir, newNeo4jDir);
+                        
+                        
                         tempSQLDataFile.delete();
                         FileUtils.deleteDirectory(tempNeo4jDir);
+                        
                         f.setOriginalFileType(originalFileType);
                         
                     } catch (IOException ex) {
@@ -731,7 +764,12 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 }
 
                 // 2. also move original file for archiving
+                
                 File tempOriginalFile = new File(fileBean.getTempSystemFileLocation());
+                
+                // TODO
+                logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: 2] set up the full-path to the file-on-the-irods");
+                
                 File newOriginalLocationFile = new File(newDir, "_" + f.getFileSystemName());
                 try {
                     
@@ -745,6 +783,8 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         FileInputStream instream = null;
                         byte[] dataBuffer = new byte[8192];
                                
+                        
+                        // TODO: how to have outputstream to the IRODS?
                         ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(newOriginalLocationFile));
                         
                         // First, the control card:
@@ -799,15 +839,21 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         // 2b. Otherwise, simply store the data that was used for
                         // ingest as the original:
                         logger.log(Level.INFO, "addIngestedFiles: 2b case");
-                        FileUtil.copyFile(tempOriginalFile, newOriginalLocationFile);
                         
                         // TODO: IRODS case here
+logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: 2b] copy files to the irods node");
+                        
+                        FileUtil.copyFile(tempOriginalFile, newOriginalLocationFile);
+                        
+                        
                         
                         
                         
                         f.setOriginalFileType(originalFileType);
                         f.setMd5(md5Checksum.CalculateMD5(newOriginalLocationFile.getAbsolutePath()));
                     }
+                    
+                    
                     tempOriginalFile.delete();
                 } catch (IOException ex) {
                     throw new EJBException(ex);
@@ -817,13 +863,19 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             // uploaded by the user to the study as is:
                 
                 logger.log(Level.INFO, "addIngestedFiles: sepcial case");
-                
+
                 File tempIngestedFile = new File(fileBean.getTempSystemFileLocation());
+                
+                logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: SO] set up the fullpath to the file");
+                
                 newIngestedLocationFile = new File(newDir, f.getFileSystemName());
                 try {
-                    FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
                     
                     // TODO: IRODS case  here
+                    logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: SO] copy the file  to the irods-node");
+                    FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
+                    
+                    
                     
                     
                     

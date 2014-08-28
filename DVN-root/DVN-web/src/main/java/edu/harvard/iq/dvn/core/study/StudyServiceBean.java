@@ -1977,7 +1977,7 @@ public class StudyServiceBean implements edu.harvard.iq.dvn.core.study.StudyServ
         if (study.getReleasedVersion() == null) {
             return;
         }
-
+        logger.log(Level.INFO, "Odum-TBM: [export call]setup the study-node");
         File studyDir = FileUtil.getStudyFileDir(study);
 
         StudyExporter studyExporter = studyExporterFactory.getStudyExporter(exportFormat);
@@ -1985,7 +1985,11 @@ public class StudyServiceBean implements edu.harvard.iq.dvn.core.study.StudyServ
         if (studyExporter.isXmlFormat()) {
             fileName += ".xml";
         }
+        logger.log(Level.INFO, "Odum-TBM: [export call] set up the full path");
         File exportFile = new File(studyDir, fileName);
+        
+        
+        
         OutputStream os = null;
         try {
             exportFile.createNewFile();

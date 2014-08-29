@@ -6,6 +6,7 @@
 package edu.harvard.iq.dvn.core.storage;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Calendar;
@@ -128,7 +129,7 @@ public class IrodsStorageServiceBean {
      * }
      */
     public void saveFile(String dir, String fileName, InputStream in) {
-        logger.log(Level.INFO, " ================== saveFile() starts here ==================");
+        logger.log(Level.INFO, " ================== saveFile(InputStream case) starts here ==================");
         String workspaceName = "default";
         session = null;
         try {
@@ -158,6 +159,39 @@ public class IrodsStorageServiceBean {
         }
     }
 
+    
+    public void saveFile(String dir, String fileName, File file) {
+        logger.log(Level.INFO, " ================== saveFile(File case) starts here ==================");
+        String workspaceName = "default";
+        session = null;
+        try {
+            session = modeShapeServiceBean.getRepository().login(workspaceName);
+            logger.log(Level.INFO, "dumping repository keys");
+            for (String s : modeShapeServiceBean.getRepository().getDescriptorKeys()) {
+                logger.log(Level.INFO,
+                        "repository:descriptors:key={0}=>{1}",
+                        new Object[]{s, modeShapeServiceBean.getRepository().getDescriptorValue(s)}
+                );
+            }
+            String pathToFile = "/irodsGrid/dataverse/studies/"+dir+"/"+fileName;
+            tools.uploadFile(session, pathToFile, file);
+
+            session.save();
+
+        } catch (NoSuchWorkspaceException ex) {
+            logger.log(Level.SEVERE, "NoSuchWorkspaceException", ex);
+        } catch (RepositoryException ex) {
+            logger.log(Level.SEVERE, "RepositoryException", ex);
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, "IOException", ex);
+        } finally {
+            if (session != null) {
+                session.logout();
+            }
+        }
+    }
+    
+    
     public void saveFileWithoutJcrTools(String dir, String fileName, InputStream in) {
 
         String workspaceName = "default";

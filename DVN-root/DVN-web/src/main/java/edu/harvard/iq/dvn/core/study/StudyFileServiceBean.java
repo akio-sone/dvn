@@ -89,12 +89,22 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
     
     @EJB
     IrodsStorageServiceBean irodsStorageService;
+    
+    
+    Properties irodsConfigParams = FileUtil.getIRODSPropertiesFile();
+    
+    String irodsStorageRootDir = "/odumMain/home/irods";
+    
+    String irodsDeterminantToken = "ODUM-IRODS_";
+    
+    
+    
+    
 
     private static final Logger logger = Logger.getLogger("edu.harvard.iq.dvn.core.study.StudyFileServiceBean");
 
-    //XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
             
-    String irodsDeterminantToken = "ODUM-IRODS_";
+
 
     public StudyFile getStudyFile(Long fileId) {
         StudyFile file = em.find(StudyFile.class, fileId);
@@ -433,11 +443,32 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
         
         
         
+        logger.log(Level.INFO, "irodsDeterminant: studyId={0}", study.getStudyId());
+        String irodsDeterminant = study.getStudyId();
+        boolean isIRODScase = false;
+        String storageDir = null;
+        if (StringUtils.isNotEmpty(irodsDeterminant) && 
+            (irodsDeterminant.startsWith(irodsDeterminantToken))){
+            logger.log(Level.INFO, "IRODS storage case: true");
+            isIRODScase = true;
+            storageDir = study.getAuthority()+"/"+study.getStudyId();
+        } else {
+            logger.log(Level.INFO, "IRODS storage case: false");
+        }
+        
+        
+        
+        
+        
 
         // Odum-modified: add a temp-to-irods path
         // step 2: iterate through nonsubsettable files, moving from temp to new location
+        
+        // 
         File newDir = FileUtil.getStudyFileDir(study);
+        
         iter = otherFiles.iterator();
+        
         while (iter.hasNext()) {
             logger.log(Level.INFO, "working on non-subsettable cases");
             
@@ -452,11 +483,23 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             // the following line is not applicable for non-local-file-system cases
             // authority: TEST or 1902.4 etc.
             logger.log(Level.INFO, "study:auth={0}", study.getAuthority());
+            // eg: TEST
+            
             logger.log(Level.INFO, "study:studyId={0}", study.getStudyId());
+            // eg: ODUM-IRODS_2222
+            
             logger.log(Level.INFO, "tempFile:abs path={0}", tempFile.getAbsolutePath());
+            // eg: /usr/local/glassfish3/glassfish/domains/domain1/applications/DVN-web/temp/8/10_400-405_8162010.pdf
             logger.log(Level.INFO, "tempFile:filename={0}", tempFile.getName());
+            // eg: 10_400-405_8162010.pdf
+            
             logger.log(Level.INFO, "newDir abs path={0}", newDir.getAbsolutePath());
+            // eg: /usr/local/glassfish3/glassfish/domains/domain1/config/files/studies/TEST/ODUM-IRODS_2222
+            
             logger.log(Level.INFO, "newDir name={0}", newDir.getName());
+            // eg: ODUM-IRODS_2222
+            
+            
             logger.log(Level.INFO, "f.getFileSystemName()={0}", f.getFileSystemName());
             
             File newLocationFile = new File(newDir, f.getFileSystemName());
@@ -468,9 +511,38 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 logger.log(Level.INFO, "copying a tempfile to its new destination: name:{0}",
                         newLocationFile.getName());
                 
-                // the line below is basically for local-file-system cases 
-                FileUtil.copyFile(tempFile, newLocationFile);
                 
+                if (isIRODScase){
+
+
+                    //InputStream is = new FileInputStream(newLocationFile.getAbsolutePath());
+                    
+                    // 1st arg:dir
+                    // 2nd arg: file name
+                    // 3rd arg: InputStream
+                    logger.log(Level.INFO, "storageDir={0}", storageDir);// eg: TEST/ODUM-IRODS_2222
+                    logger.log(Level.INFO, "f.getFileSystemName()={0}", f.getFileSystemName()); // eg: 84
+                    logger.log(Level.INFO, "uploading the file to the irods started");
+                    
+                    
+                    irodsStorageService.saveFile(storageDir, f.getFileSystemName(), tempFile);
+                    logger.log(Level.INFO, "uploading the file to the irods ended");
+                        
+                    // for irods cases, location is like this:
+                    // irods://irods@iodum1.irss.unc.edu%3A1247/odumMain/home/irods/1902.29/ODUM-IRODS_11518
+                    // TODO replace this with sb.toString()
+                    // getIRODSpath(String irodsStorageRootDir, String storageDir, String fileSystemName)
+                    // getIRODSpath(String irodsStorageRootDir, String storageDir, String fileSystemName)
+                    String irodszObjectPath = getIRODSpath(irodsStorageRootDir, storageDir, f.getFileSystemName());
+                    logger.log(Level.INFO, "irods file location to be ={0}", irodszObjectPath);
+                    //f.setFileSystemLocation(irodszObjectPath);
+                    f.setFileSystemLocation(newLocationFile.getAbsolutePath());
+                    
+                } else {
+                    // the line below is basically for local-file-system cases 
+                    FileUtil.copyFile(tempFile, newLocationFile);
+                    f.setFileSystemLocation(newLocationFile.getAbsolutePath());
+                }
                 
                 // here another archiving method would be called
                 
@@ -488,65 +560,13 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 
                 logger.log(Level.INFO, "newLocationFile.getAbsolutePath()={0}",
                         newLocationFile.getAbsolutePath());
-                // for irods cases, start like this:
-                // irods://irods@iodum1.irss.unc.edu%3A1247/odumMain/home/irods/1902.29/ODUM-IRODS_11518
-                String irodsDeterminant = study.getStudyId();
-                
-                
-                
-                if (StringUtils.isNotEmpty(irodsDeterminant)){
-                    logger.log(Level.INFO, "studyId={0}", study.getStudyId());
-                    
-                    if (irodsDeterminant.startsWith(irodsDeterminantToken)){
-                        // irods-specific processing
-                        logger.log(Level.INFO, "this study is an IRODs-related one:{0}",
-                                irodsDeterminant);
-                        
-                        Properties irodsConfigParams = FileUtil.getIRODSPropertiesFile();
-                        
-                        String storageDir = study.getAuthority()+"/"+study.getStudyId();
-                        String irodsProtocol= "irods://";
-                        String portNumber = irodsConfigParams.getProperty("port");
-                        String irodsServerName = irodsConfigParams.getProperty("host");
-                        String irodsStorageRootDir = "/odumMain/home/irods";
-                        StringBuilder sb = new StringBuilder(irodsProtocol);
-                        sb.append(irodsServerName).append(":").append(portNumber);
-                        sb.append(irodsStorageRootDir);
-                        sb.append("/").append(storageDir);
-                        sb.append("/").append(f.getFileSystemName());
-                        
-                        logger.log(Level.INFO, "irods file location to be ={0}",
-                                sb.toString());
-                        // tempFiles has been deleted
-                        InputStream is = new FileInputStream(newLocationFile.getAbsolutePath());
-                        // 1st arg:dir
-                        // 2nd arg: file name
-                        // 3rd arg: InputStream
-                        logger.log(Level.INFO, "storageDir={0}", storageDir);
-                        logger.log(Level.INFO, "f.getFileSystemName()={0}", 
-                                f.getFileSystemName());
-                                                logger.log(Level.INFO, "uploading the file to the irods started");
-                        irodsStorageService.saveFile(storageDir, 
-                                f.getFileSystemName(), is);
-                        logger.log(Level.INFO, "uploading the file to the irods ended");
-                        
-                        f.setFileSystemLocation(newLocationFile.getAbsolutePath());
-                    } else {
-                        // not idrods 
-                        logger.log(Level.INFO, "this study is NOT an IRODs-related one:{0}",
-                                irodsDeterminant);
-                        
-                
-                        f.setFileSystemLocation(newLocationFile.getAbsolutePath());
-                    }
-                }
 
-
+                
+                
+                
                 logger.log(Level.INFO, "studyVersion={0}", studyVersion);
                 fileBean.getFileMetadata().setStudyVersion( studyVersion );
                 
-
-                //logger.log(Level.FINEST, "StudyFileEditBean fileBean={0}", xstream.toXML(fileBean));
                 
                 em.persist(fileBean.getStudyFile());
                 em.persist(fileBean.getFileMetadata());
@@ -661,6 +681,22 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
         if (!newDir.exists()) {
             newDir.mkdirs();
         }
+        
+        logger.log(Level.INFO, "irodsDeterminant: studyId={0}", study.getStudyId());
+        String irodsDeterminant = study.getStudyId();
+        boolean isIRODScase = false;
+        String storageDir = null;
+        if (StringUtils.isNotEmpty(irodsDeterminant) && 
+            (irodsDeterminant.startsWith(irodsDeterminantToken))){
+            logger.log(Level.INFO, "IRODS storage case: true");
+            isIRODScase = true;
+            storageDir = study.getAuthority()+"/"+study.getStudyId();
+        } else {
+            logger.log(Level.INFO, "IRODS storage case: false");
+        }
+        
+        
+        
 
         // now iterate through fileBeans
         Iterator iter = fileBeans.iterator();
@@ -687,6 +723,10 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             
             File newIngestedLocationFile = null; 
             
+            
+            
+            
+            
             if (fileBean.getIngestedSystemFileLocation() != null) {
 
                 String originalFileType = f.getFileType();
@@ -705,12 +745,16 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 try {
                     
                     
+
                     
-                    // TODO: copy these files to the IRODS
-                    logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles] copy the study dir to the irods node");
-                    
-                    FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
-                    
+                    if (!isIRODScase){
+                        FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
+                    } else {
+                        // TODO: copy these files to the IRODS
+                        logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles] copy the study dir to the irods node");
+                        logger.log(Level.INFO, "f.getFileSystemName()={0}", f.getFileSystemName());
+                        irodsStorageService.saveFile(storageDir, f.getFileSystemName(), tempIngestedFile);
+                    }
                     
                     
                     tempIngestedFile.delete();
@@ -747,11 +791,20 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                     logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles] copy these two to the irods node");
                     
                         
-                        
-                        FileUtil.copyFile(tempSQLDataFile, newSQLDataFile);
-                        
-                        FileUtils.copyDirectory(tempNeo4jDir, newNeo4jDir);
-                        
+                        if (isIRODScase){
+                            logger.log(Level.INFO, "tempSQLDataFile={0}", tempSQLDataFile.getAbsolutePath());
+                            logger.log(Level.INFO, "newSQLDataFile={0}", newSQLDataFile.getName());
+                            irodsStorageService.saveFile(storageDir, newSQLDataFile.getName(), tempSQLDataFile);
+                            logger.log(Level.INFO, "tempNeo4jDir={0}", tempNeo4jDir.getAbsolutePath());
+                            logger.log(Level.INFO, "newSQLDataFile={0}", newNeo4jDir.getName());
+                            
+                            irodsStorageService.saveFile(storageDir, newNeo4jDir.getName(), tempNeo4jDir);
+                            
+                        } else {
+                            FileUtil.copyFile(tempSQLDataFile, newSQLDataFile);
+
+                            FileUtils.copyDirectory(tempNeo4jDir, newNeo4jDir);
+                        }
                         
                         tempSQLDataFile.delete();
                         FileUtils.deleteDirectory(tempNeo4jDir);
@@ -774,52 +827,86 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 try {
                     
                     
-                    if (fileBean.getControlCardSystemFileLocation() != null && fileBean.getControlCardType() != null) {
+                    if (fileBean.getControlCardSystemFileLocation() != null && 
+                        fileBean.getControlCardType() != null) {
                         logger.log(Level.INFO, "addIngestedFiles: 2a case");
                         // 2a. For the control card-based ingests (SPSS and DDI), we save
                         // a zipped bundle of both the card and the raw data file
                         // (TAB-delimited or CSV):
-                                           
-                        FileInputStream instream = null;
-                        byte[] dataBuffer = new byte[8192];
-                               
                         
-                        // TODO: how to have outputstream to the IRODS?
-                        ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(newOriginalLocationFile));
-                        
-                        // First, the control card:
-                        
+                        // zip file includes the following two files:
+                        // file-1: control card file
                         File controlCardFile = new File(fileBean.getControlCardSystemFileLocation());
-
-                        ZipEntry ze = new ZipEntry(controlCardFile.getName());
-                        instream = new FileInputStream(controlCardFile);
-                        zout.putNextEntry(ze);
+                        // file-2 : data file
+                        // tempOriginalFile
                         
-                        int k = 0;
-                        while ( ( k = instream.read (dataBuffer) ) > 0 ) {
-                            zout.write(dataBuffer,0,k);
-                            zout.flush(); 
+                        logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: 2a] copy zip file to the irods node");
+                        
+                        if (isIRODScase){
+                            logger.log(Level.INFO, "newOriginalLocationFile={0}", newOriginalLocationFile.getName());
+                            
+                            //irodsStorageService.saveFile(storageDir, newOriginalLocationFile.getName(), tempOriginalFile);
+                            // destnation-file
+                            // TODO: controlCardFile, tempOriginalFile
+                            // without the local storage system, zip-file must be created in a temp file
+                            // or temp dir to be deleted later
+                            
+                        } else {
+
+
+                            FileInputStream instream = null;
+                            byte[] dataBuffer = new byte[8192];
+
+                            ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(newOriginalLocationFile));
+
+                            // First, the control card:
+
+                            //File controlCardFile = new File(fileBean.getControlCardSystemFileLocation());
+
+                            ZipEntry ze = new ZipEntry(controlCardFile.getName());
+                            
+                            instream = new FileInputStream(controlCardFile);
+                            
+                            zout.putNextEntry(ze);
+
+                            int k = 0;
+                            while ( ( k = instream.read (dataBuffer) ) > 0 ) {
+                                zout.write(dataBuffer,0,k);
+                                zout.flush(); 
+                            }
+
+                            instream.close();
+
+                            // And then, the data file:
+
+                            ze = new ZipEntry(tempOriginalFile.getName());
+                            instream = new FileInputStream(tempOriginalFile);
+                            zout.putNextEntry(ze);
+
+                            while ( ( k = instream.read (dataBuffer) ) > 0 ) {
+                                zout.write(dataBuffer,0,k);
+                                zout.flush(); 
+                            }
+
+                            instream.close();
+
+
+                            zout.close();
+                        
+                        
+
+
                         }
-
-                        instream.close();
                         
-                        // And then, the data file:
-                                                
-                        ze = new ZipEntry(tempOriginalFile.getName());
-                        instream = new FileInputStream(tempOriginalFile);
-                        zout.putNextEntry(ze);
-                                                                
-                        while ( ( k = instream.read (dataBuffer) ) > 0 ) {
-                            zout.write(dataBuffer,0,k);
-                            zout.flush(); 
-                        }
-
-                        instream.close();
-                    
-                        zout.close();
                         
-                        // and control card file can be deleted now:
-                        controlCardFile.delete();
+                        
+                        
+                            // and control card file can be deleted now:
+                            controlCardFile.delete();
+                        
+                        
+                        
+                        
                         
                         // Mime types: 
                         // These are custom, made-up types, used to identify the 
@@ -841,10 +928,14 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         logger.log(Level.INFO, "addIngestedFiles: 2b case");
                         
                         // TODO: IRODS case here
-logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: 2b] copy files to the irods node");
-                        
-                        FileUtil.copyFile(tempOriginalFile, newOriginalLocationFile);
-                        
+                        logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: 2b] copy files to the irods node");
+                        if (isIRODScase){
+                            logger.log(Level.INFO, "newOriginalLocationFile={0}", newOriginalLocationFile.getName());
+                            
+                            irodsStorageService.saveFile(storageDir, newOriginalLocationFile.getName(), tempOriginalFile);
+                        } else {
+                            FileUtil.copyFile(tempOriginalFile, newOriginalLocationFile);
+                        }
                         
                         
                         
@@ -869,13 +960,20 @@ logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: 2b] copy files to the irods
                 logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: SO] set up the fullpath to the file");
                 
                 newIngestedLocationFile = new File(newDir, f.getFileSystemName());
+                
                 try {
                     
                     // TODO: IRODS case  here
                     logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: SO] copy the file  to the irods-node");
-                    FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
                     
                     
+                    if (isIRODScase){
+                        logger.log(Level.INFO, "newOriginalLocationFile={0}", newIngestedLocationFile.getName());
+                        irodsStorageService.saveFile(storageDir, newIngestedLocationFile.getName(), tempIngestedFile);
+                    } else {
+                        FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
+                    
+                    }
                     
                     
                     
@@ -932,5 +1030,21 @@ logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: 2b] copy files to the irods
         }
            
         return list;
-    } 
+    }
+        
+        
+    public String getIRODSpath(String irodsStorageRootDir, String storageDir, String fileSystemName){
+
+        String irodsProtocol= "irods://";
+        String portNumber = irodsConfigParams.getProperty("port");
+        String irodsServerName = irodsConfigParams.getProperty("host");
+
+        StringBuilder sb = new StringBuilder(irodsProtocol);
+        sb.append(irodsServerName).append(":").append(portNumber).append(irodsStorageRootDir);
+        sb.append("/").append(storageDir);
+        sb.append("/").append(fileSystemName);
+
+        logger.log(Level.INFO, "irods file location to be ={0}", sb.toString());
+        return sb.toString();
+    }
 }

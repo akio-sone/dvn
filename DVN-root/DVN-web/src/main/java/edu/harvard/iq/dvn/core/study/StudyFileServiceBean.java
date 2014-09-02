@@ -489,6 +489,15 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             // eg: ODUM-IRODS_2222
             
             logger.log(Level.INFO, "tempFile:abs path={0}", tempFile.getAbsolutePath());
+            
+            if (tempFile.exists()){
+                logger.log(Level.INFO, "tempFile:abs path={0} exists", tempFile.getAbsolutePath());
+            } else {
+                logger.log(Level.INFO, "tempFile:abs path={0} does not exist", tempFile.getAbsolutePath());
+            }
+            
+            
+            
             // eg: /usr/local/glassfish3/glassfish/domains/domain1/applications/DVN-web/temp/8/10_400-405_8162010.pdf
             logger.log(Level.INFO, "tempFile:filename={0}", tempFile.getName());
             // eg: 10_400-405_8162010.pdf
@@ -513,7 +522,11 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 
                 
                 if (isIRODScase){
-
+                
+                logger.log(Level.INFO, 
+                "+++++++++++ irods-storage service would be called here +++++++++++ ");
+                
+                
 
                     //InputStream is = new FileInputStream(newLocationFile.getAbsolutePath());
                     
@@ -533,22 +546,12 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                     // TODO replace this with sb.toString()
                     // getIRODSpath(String irodsStorageRootDir, String storageDir, String fileSystemName)
                     // getIRODSpath(String irodsStorageRootDir, String storageDir, String fileSystemName)
-                    String irodszObjectPath = getIRODSpath(irodsStorageRootDir, storageDir, f.getFileSystemName());
-                    logger.log(Level.INFO, "irods file location to be ={0}", irodszObjectPath);
-                    //f.setFileSystemLocation(irodszObjectPath);
-                    f.setFileSystemLocation(newLocationFile.getAbsolutePath());
+                    String irodsObjectPath = getIRODSpath(irodsStorageRootDir, storageDir, f.getFileSystemName());
+                    logger.log(Level.INFO, "irods file location to be ={0}", irodsObjectPath);
+                    f.setFileSystemLocation(irodsObjectPath);
+                    //f.setFileSystemLocation(newLocationFile.getAbsolutePath());
                     
-                } else {
-                    // the line below is basically for local-file-system cases 
-                    FileUtil.copyFile(tempFile, newLocationFile);
-                    f.setFileSystemLocation(newLocationFile.getAbsolutePath());
-                }
-                
-                // here another archiving method would be called
-                
-                logger.log(Level.INFO, 
-                "+++++++++++ irods-storage service would be called here +++++++++++ ");
-                
+                    
                 logger.log(Level.INFO, "tempFile:abs path:{0} is to be deleted", 
                         tempFile.getAbsolutePath());
                 logger.log(Level.INFO, "tempFile:name:{0} is to be deleted", 
@@ -556,10 +559,33 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 
                 tempFile.delete();
                 
+                    
+                    
+                    
+                } else {
+                    
                 logger.log(Level.INFO, "the following newlocation saving is basically local-file-system cases");
                 
                 logger.log(Level.INFO, "newLocationFile.getAbsolutePath()={0}",
                         newLocationFile.getAbsolutePath());
+                    
+                    
+                    // the line below is basically for local-file-system cases 
+                    FileUtil.copyFile(tempFile, newLocationFile);
+                    f.setFileSystemLocation(newLocationFile.getAbsolutePath());
+                    
+                logger.log(Level.INFO, "tempFile:abs path:{0} is to be deleted", 
+                        tempFile.getAbsolutePath());
+                logger.log(Level.INFO, "tempFile:name:{0} is to be deleted", 
+                        tempFile.getName());
+                
+                tempFile.delete();
+                    
+                }
+                
+
+
+
 
                 
                 
@@ -654,6 +680,11 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
 
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void addIngestedFiles( Long studyId, String versionNote, List fileBeans, Long userId) {
+        
+        logger.log(Level.INFO, "++++++++++++++++ StudyFileServiceBean: addIngestedFiles: starts here ");
+
+        
+        
         // if no files, then just return
         if (fileBeans.isEmpty()) {
             return;
@@ -735,36 +766,47 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                 // 1. move ingest-created file:
                 
                 File tempIngestedFile = new File(fileBean.getIngestedSystemFileLocation());
-                
+                if (tempIngestedFile.exists()){
+                    logger.log(Level.INFO, "tempIngestedFile={0} exists", tempIngestedFile.getAbsolutePath());
+                } else {
+                    logger.log(Level.INFO, "tempIngestedFile={0} does not exist", tempIngestedFile.getAbsolutePath());
+                }
                 logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles] set up the full path to the ingested file");
                 
                 newIngestedLocationFile = new File(newDir, f.getFileSystemName());
                 
-                
+                String irodsObjectPath = getIRODSpath(irodsStorageRootDir, storageDir, f.getFileSystemName());
                 
                 try {
-                    
-                    
 
-                    
-                    if (!isIRODScase){
-                        FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
-                    } else {
+                    if (isIRODScase) {
                         // TODO: copy these files to the IRODS
                         logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles] copy the study dir to the irods node");
                         logger.log(Level.INFO, "f.getFileSystemName()={0}", f.getFileSystemName());
                         irodsStorageService.saveFile(storageDir, f.getFileSystemName(), tempIngestedFile);
-                    }
-                    
-                    
-                    tempIngestedFile.delete();
-                    if (f instanceof TabularDataFile ){
-                        f.setFileType("text/tab-separated-values");
-                    }
-                    f.setFileSystemLocation(newIngestedLocationFile.getAbsolutePath());
-                    
 
-                    
+                        tempIngestedFile.delete();
+                        if (f instanceof TabularDataFile) {
+                            f.setFileType("text/tab-separated-values");
+                        }
+
+
+                        logger.log(Level.INFO, "irods file location to be ={0}", irodsObjectPath);
+
+                        f.setFileSystemLocation(irodsObjectPath);
+
+                    } else {
+                        FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
+
+                        tempIngestedFile.delete();
+                        if (f instanceof TabularDataFile) {
+                            f.setFileType("text/tab-separated-values");
+                        }
+                        f.setFileSystemLocation(newIngestedLocationFile.getAbsolutePath());
+
+                    }
+
+
 
                 } catch (IOException ex) {
                     throw new EJBException(ex);
@@ -836,20 +878,80 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         
                         // zip file includes the following two files:
                         // file-1: control card file
+                        // location: fileBean.getControlCardSystemFileLocation()
                         File controlCardFile = new File(fileBean.getControlCardSystemFileLocation());
                         // file-2 : data file
                         // tempOriginalFile
                         
-                        logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: 2a] copy zip file to the irods node");
-                        
                         if (isIRODScase){
-                            logger.log(Level.INFO, "newOriginalLocationFile={0}", newOriginalLocationFile.getName());
+                            logger.log(Level.INFO, "Odum-TBM: [addIngestedFiles: 2a] copy zip file to the irods node");
+                        
+                            // for irods cases, zip file would be initially created in 
+                            // the directory where tempOrignalFile exists
+                            File zipFileForIrods = new File(tempOriginalFile.getParent(), "_" + f.getFileSystemName());
+                        
+
                             
-                            //irodsStorageService.saveFile(storageDir, newOriginalLocationFile.getName(), tempOriginalFile);
-                            // destnation-file
-                            // TODO: controlCardFile, tempOriginalFile
-                            // without the local storage system, zip-file must be created in a temp file
-                            // or temp dir to be deleted later
+                            
+                            
+                            logger.log(Level.INFO, "zipFileForIrods={0}", 
+                                    zipFileForIrods.getAbsolutePath());
+                            
+                            
+                            
+                            FileInputStream instream = null;
+                            byte[] dataBuffer = new byte[8192];
+
+                            ZipOutputStream zout = 
+                                    new ZipOutputStream(new FileOutputStream(zipFileForIrods));
+
+                            // First, the control card:
+
+                            //File controlCardFile = new File(fileBean.getControlCardSystemFileLocation());
+
+                            ZipEntry ze = new ZipEntry(controlCardFile.getName());
+                            
+                            instream = new FileInputStream(controlCardFile);
+                            
+                            zout.putNextEntry(ze);
+
+                            int k = 0;
+                            while ( ( k = instream.read (dataBuffer) ) > 0 ) {
+                                zout.write(dataBuffer,0,k);
+                                zout.flush(); 
+                            }
+
+                            instream.close();
+
+                            // And then, the data file:
+
+                            ze = new ZipEntry(tempOriginalFile.getName());
+                            instream = new FileInputStream(tempOriginalFile);
+                            zout.putNextEntry(ze);
+
+                            while ( ( k = instream.read (dataBuffer) ) > 0 ) {
+                                zout.write(dataBuffer,0,k);
+                                zout.flush(); 
+                            }
+
+                            instream.close();
+
+
+                            zout.close();
+                            
+                            
+                            logger.log(Level.INFO, "zipFileForIrods.getName()={0}", 
+                                    zipFileForIrods.getName());
+                            logger.log(Level.INFO, "zipFileForIrods.getAbsolutePath()={0}", 
+                                    zipFileForIrods.getAbsolutePath());
+                            logger.log(Level.INFO, "saving the zipped control and its accompanying data files to IRODS");
+                            irodsStorageService.saveFile(storageDir, zipFileForIrods.getName(), zipFileForIrods);
+
+                            logger.log(Level.INFO, "deleting zipFileForIrods file");
+                            zipFileForIrods.delete();
+                            
+                            
+                            
                             
                         } else {
 
@@ -974,14 +1076,6 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
                     
                     }
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
                     
                     
                     

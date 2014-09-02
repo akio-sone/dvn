@@ -134,13 +134,13 @@ public class IrodsStorageServiceBean {
         session = null;
         try {
             session = modeShapeServiceBean.getRepository().login(workspaceName);
-            logger.log(Level.INFO, "dumping repository keys");
-            for (String s : modeShapeServiceBean.getRepository().getDescriptorKeys()) {
-                logger.log(Level.INFO,
-                        "repository:descriptors:key={0}=>{1}",
-                        new Object[]{s, modeShapeServiceBean.getRepository().getDescriptorValue(s)}
-                );
-            }
+//            logger.log(Level.INFO, "dumping repository keys");
+//            for (String s : modeShapeServiceBean.getRepository().getDescriptorKeys()) {
+//                logger.log(Level.INFO,
+//                        "repository:descriptors:key={0}=>{1}",
+//                        new Object[]{s, modeShapeServiceBean.getRepository().getDescriptorValue(s)}
+//                );
+//            }
             String pathToFile = "/irodsGrid/dataverse/studies/"+dir+"/"+fileName;
             tools.uploadFile(session, pathToFile, in);
 
@@ -166,13 +166,13 @@ public class IrodsStorageServiceBean {
         session = null;
         try {
             session = modeShapeServiceBean.getRepository().login(workspaceName);
-            logger.log(Level.INFO, "dumping repository keys");
-            for (String s : modeShapeServiceBean.getRepository().getDescriptorKeys()) {
-                logger.log(Level.INFO,
-                        "repository:descriptors:key={0}=>{1}",
-                        new Object[]{s, modeShapeServiceBean.getRepository().getDescriptorValue(s)}
-                );
-            }
+//            logger.log(Level.INFO, "dumping repository keys");
+//            for (String s : modeShapeServiceBean.getRepository().getDescriptorKeys()) {
+//                logger.log(Level.INFO,
+//                        "repository:descriptors:key={0}=>{1}",
+//                        new Object[]{s, modeShapeServiceBean.getRepository().getDescriptorValue(s)}
+//                );
+//            }
             String pathToFile = "/irodsGrid/dataverse/studies/"+dir+"/"+fileName;
             tools.uploadFile(session, pathToFile, file);
 

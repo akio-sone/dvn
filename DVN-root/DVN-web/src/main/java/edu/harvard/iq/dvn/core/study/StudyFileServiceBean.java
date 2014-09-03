@@ -514,33 +514,28 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             File newLocationFile = new File(newDir, f.getFileSystemName());
             
             try {
-                
+
                 logger.log(Level.INFO, "copying a tempfile to its new destination: abs path:{0}",
                         newLocationFile.getAbsolutePath());
                 logger.log(Level.INFO, "copying a tempfile to its new destination: name:{0}",
                         newLocationFile.getName());
-                
-                
-                if (isIRODScase){
-                
-                logger.log(Level.INFO, 
-                "+++++++++++ irods-storage service would be called here +++++++++++ ");
-                
-                
+
+                if (isIRODScase) {
+
+                    logger.log(Level.INFO,
+                            "+++++++++++ irods-storage service would be called here +++++++++++ ");
 
                     //InputStream is = new FileInputStream(newLocationFile.getAbsolutePath());
-                    
                     // 1st arg:dir
                     // 2nd arg: file name
                     // 3rd arg: InputStream
                     logger.log(Level.INFO, "storageDir={0}", storageDir);// eg: TEST/ODUM-IRODS_2222
                     logger.log(Level.INFO, "f.getFileSystemName()={0}", f.getFileSystemName()); // eg: 84
                     logger.log(Level.INFO, "uploading the file to the irods started");
-                    
-                    
+
                     irodsStorageService.saveFile(storageDir, f.getFileSystemName(), tempFile);
                     logger.log(Level.INFO, "uploading the file to the irods ended");
-                        
+
                     // for irods cases, location is like this:
                     // irods://irods@iodum1.irss.unc.edu%3A1247/odumMain/home/irods/1902.29/ODUM-IRODS_11518
                     // TODO replace this with sb.toString()
@@ -550,50 +545,38 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                     logger.log(Level.INFO, "irods file location to be ={0}", irodsObjectPath);
                     f.setFileSystemLocation(irodsObjectPath);
                     //f.setFileSystemLocation(newLocationFile.getAbsolutePath());
-                    
-                    
-                logger.log(Level.INFO, "tempFile:abs path:{0} is to be deleted", 
-                        tempFile.getAbsolutePath());
-                logger.log(Level.INFO, "tempFile:name:{0} is to be deleted", 
-                        tempFile.getName());
-                
-                tempFile.delete();
-                
-                    
-                    
-                    
+
+                    logger.log(Level.INFO, "tempFile:abs path:{0} is to be deleted",
+                            tempFile.getAbsolutePath());
+                    logger.log(Level.INFO, "tempFile:name:{0} is to be deleted",
+                            tempFile.getName());
+
                 } else {
-                    
-                logger.log(Level.INFO, "the following newlocation saving is basically local-file-system cases");
-                
-                logger.log(Level.INFO, "newLocationFile.getAbsolutePath()={0}",
-                        newLocationFile.getAbsolutePath());
-                    
-                    
+
+                    logger.log(Level.INFO, "the following newlocation saving is basically local-file-system cases");
+
+                    logger.log(Level.INFO, "newLocationFile.getAbsolutePath()={0}",
+                            newLocationFile.getAbsolutePath());
+
                     // the line below is basically for local-file-system cases 
                     FileUtil.copyFile(tempFile, newLocationFile);
                     f.setFileSystemLocation(newLocationFile.getAbsolutePath());
-                    
-                logger.log(Level.INFO, "tempFile:abs path:{0} is to be deleted", 
-                        tempFile.getAbsolutePath());
-                logger.log(Level.INFO, "tempFile:name:{0} is to be deleted", 
-                        tempFile.getName());
-                
-                tempFile.delete();
-                    
+
+                    logger.log(Level.INFO, "tempFile:abs path:{0} is to be deleted",
+                            tempFile.getAbsolutePath());
+                    logger.log(Level.INFO, "tempFile:name:{0} is to be deleted",
+                            tempFile.getName());
+
                 }
-                
 
+                logger.log(Level.INFO, "CalculateMD5:{0}", tempFile.getAbsolutePath());
+                f.setMd5(md5Checksum.CalculateMD5(tempFile.getAbsolutePath()));
+                logger.log(Level.INFO, "deteling tempFile:{0}", tempFile.getAbsolutePath());
+                tempFile.delete();
 
-
-
-                
-                
-                
                 logger.log(Level.INFO, "studyVersion={0}", studyVersion);
-                fileBean.getFileMetadata().setStudyVersion( studyVersion );
-                
-                
+                fileBean.getFileMetadata().setStudyVersion(studyVersion);
+
                 em.persist(fileBean.getStudyFile());
                 em.persist(fileBean.getFileMetadata());
 
@@ -603,7 +586,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             
             
             
-            f.setMd5(md5Checksum.CalculateMD5(f.getFileSystemLocation()));
+            //f.setMd5(md5Checksum.CalculateMD5(f.getFileSystemLocation()));
         }
 
         // step 3: iterate through subsettable files, sending a message via JMS
@@ -1043,7 +1026,8 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                         
                         
                         f.setOriginalFileType(originalFileType);
-                        f.setMd5(md5Checksum.CalculateMD5(newOriginalLocationFile.getAbsolutePath()));
+                        //f.setMd5(md5Checksum.CalculateMD5(newOriginalLocationFile.getAbsolutePath()));
+                        f.setMd5(md5Checksum.CalculateMD5(tempOriginalFile.getAbsolutePath()));
                     }
                     
                     
@@ -1077,11 +1061,11 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                     
                     }
                     
-                    
+                    f.setFileSystemLocation(newIngestedLocationFile.getAbsolutePath());
+                    f.setMd5(md5Checksum.CalculateMD5(tempIngestedFile.getAbsolutePath()));
                     
                     tempIngestedFile.delete();
-                    f.setFileSystemLocation(newIngestedLocationFile.getAbsolutePath());
-                    f.setMd5(md5Checksum.CalculateMD5(newIngestedLocationFile.getAbsolutePath()));
+
                 } catch (IOException ex) {
                     throw new EJBException(ex);
                 }
@@ -1130,8 +1114,12 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
     public String getIRODSpath(String irodsStorageRootDir, String storageDir, String fileSystemName){
 
         String irodsProtocol= "irods://";
-        String portNumber = irodsConfigParams.getProperty("port");
         String irodsServerName = irodsConfigParams.getProperty("host");
+        logger.log(Level.INFO, "irodsServerName={0}", irodsServerName);
+        
+        String portNumber = irodsConfigParams.getProperty("port");
+        logger.log(Level.INFO, "port={0}", portNumber);
+
 
         StringBuilder sb = new StringBuilder(irodsProtocol);
         sb.append(irodsServerName).append(":").append(portNumber).append(irodsStorageRootDir);

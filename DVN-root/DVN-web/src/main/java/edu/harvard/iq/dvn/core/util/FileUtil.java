@@ -360,9 +360,9 @@ public class FileUtil implements java.io.Serializable  {
         Properties gfJvmProps = System.getProperties();
         Properties irodslConfigProps = new Properties();
 
-        if (gfJvmProps.containsKey("dvn.irods.config.file")) {
+        if (gfJvmProps.containsKey("irods.config.file")) {
             String irodsConfigFileName
-                    = gfJvmProps.getProperty("dvn.irods.config.file");
+                    = gfJvmProps.getProperty("irods.config.file");
 
             if (StringUtils.isNotBlank(irodsConfigFileName)) {
                 // load the configuration file

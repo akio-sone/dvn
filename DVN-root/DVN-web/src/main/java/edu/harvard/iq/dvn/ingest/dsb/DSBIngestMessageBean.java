@@ -126,6 +126,8 @@ public class DSBIngestMessageBean implements MessageListener {
             }
 
             if (!successfulFiles.isEmpty()) {
+                logger.log(Level.INFO, "ingestMessage.getStudyId()={0}", 
+                        ingestMessage.getStudyId());
                 studyFileService.addIngestedFiles(ingestMessage.getStudyId(), ingestMessage.getVersionNote(), successfulFiles, ingestMessage.getIngestUserId());
             }
                     

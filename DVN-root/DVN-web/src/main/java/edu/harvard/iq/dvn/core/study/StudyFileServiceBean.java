@@ -387,10 +387,9 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             VDCUser user, String ingestEmail, int messageLevel) {
         
         logger.log(Level.INFO, "++++++++++++++++ StudyFileServiceBean: addFiles: starts here ");
-
-        Study study = studyVersion.getStudy();
+//        XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
         
-        //logger.log(Level.FINEST, "study:contents check:{0}", xstream.toXML(study));
+        Study study = studyVersion.getStudy();
         
         
         
@@ -407,9 +406,22 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             // same ingest scheme as for subsettables: they will be queued and 
             // processed asynchronously, and the user will be notified by email.
             // - L.A.
-            if (fileBean.getStudyFile().isSubsettable() || fileBean.getStudyFile() instanceof SpecialOtherFile) {
+            if (fileBean.getStudyFile() != null){
+                logger.log(Level.INFO, "fileBean.getStudyFile() is NOT null");
+                logger.log(Level.INFO, "fileBean.getStudyFile().getId()={0}", 
+                        fileBean.getStudyFile().getId());
                 
-                logger.log(Level.INFO, "This is a subsettable case: subsettableFiles.add() is called");
+//                logger.log(Level.INFO, "fileBean.getStudyFile():contents check:{0}", xstream.toXML(fileBean.getStudyFile()));
+                
+            } else {
+                logger.log(Level.INFO, "fileBean.getStudyFile() returned null");
+            }
+            
+            
+            if (fileBean.getStudyFile().isSubsettable() || 
+                    fileBean.getStudyFile() instanceof SpecialOtherFile) {
+                
+                logger.log(Level.INFO, "This is a subsettable case");
                 subsettableFiles.add(fileBean);
             } else {
                 logger.log(Level.INFO, "This is NOT a subsettable case");
@@ -478,6 +490,10 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             
             
             StudyFile f = fileBean.getStudyFile();
+            logger.log(Level.INFO, "fileBean.getStudyFile().getId()={0}", 
+                        f.getId());
+            
+            
             File tempFile = new File(fileBean.getTempSystemFileLocation());
             
             // the following line is not applicable for non-local-file-system cases
@@ -571,6 +587,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
 
                 logger.log(Level.INFO, "CalculateMD5:{0}", tempFile.getAbsolutePath());
                 f.setMd5(md5Checksum.CalculateMD5(tempFile.getAbsolutePath()));
+                
                 logger.log(Level.INFO, "deteling tempFile:{0}", tempFile.getAbsolutePath());
                 tempFile.delete();
 
@@ -664,9 +681,11 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
     @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void addIngestedFiles( Long studyId, String versionNote, List fileBeans, Long userId) {
         
-        logger.log(Level.INFO, "++++++++++++++++ StudyFileServiceBean: addIngestedFiles: starts here ");
+        logger.log(Level.INFO, "++++++++++++++++ StudyFileServiceBean: addIngestedFiles: starts here: for studyId={0}", studyId);
 
-        
+//        XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
+//        
+//        logger.log(Level.INFO, "fileBeans={0}", xstream.toXML(fileBeans));
         
         // if no files, then just return
         if (fileBeans.isEmpty()) {
@@ -714,6 +733,7 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
 
         // now iterate through fileBeans
         Iterator iter = fileBeans.iterator();
+        logger.log(Level.INFO, "========== working on each of the fileBeans: while starts here");
         while (iter.hasNext()) {
             StudyFileEditBean fileBean = (StudyFileEditBean) iter.next();
 
@@ -729,6 +749,13 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             
             StudyFile f = fileBean.getStudyFile();
             
+            
+            logger.log(Level.INFO, "check study_id is not null: f.getId()={0}", 
+                    f.getId());
+            logger.log(Level.INFO, "check study_id is not null: f.getFileSystemLocation()={0}", 
+                    f.getFileSystemLocation());
+            logger.log(Level.INFO, "check study_id is not null: f.getFileName()={0}", 
+                    f.getFileName());
             // So, if there is a file: let's move it to its final destination
             // in the study directory. 
             //
@@ -1056,12 +1083,15 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
                     if (isIRODScase){
                         logger.log(Level.INFO, "newOriginalLocationFile={0}", newIngestedLocationFile.getName());
                         irodsStorageService.saveFile(storageDir, newIngestedLocationFile.getName(), tempIngestedFile);
+                        String irodsObjectPath = getIRODSpath(irodsStorageRootDir, storageDir, f.getFileSystemName());
+                        logger.log(Level.INFO, "irodsObjectPath={0}", irodsObjectPath);
+                        f.setFileSystemLocation(irodsObjectPath);
                     } else {
                         FileUtil.copyFile(tempIngestedFile, newIngestedLocationFile);
-                    
+                        f.setFileSystemLocation(newIngestedLocationFile.getAbsolutePath());
                     }
                     
-                    f.setFileSystemLocation(newIngestedLocationFile.getAbsolutePath());
+                    
                     f.setMd5(md5Checksum.CalculateMD5(tempIngestedFile.getAbsolutePath()));
                     
                     tempIngestedFile.delete();
@@ -1073,24 +1103,33 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
             
             // Finally, if the file was copied sucessfully, 
             // attach file to study version and study
-            
-            if (newIngestedLocationFile != null && newIngestedLocationFile.exists()) {
-                
+            logger.log(Level.INFO, "fileBean.getStudyFile().getId()={0}", 
+                    fileBean.getStudyFile().getId());
+            if (newIngestedLocationFile != null && newIngestedLocationFile.exists()
+                    || f.getFileSystemLocation() != null
+                    ) {
+                logger.log(Level.INFO, "persisting the data of this file");
                 fileBean.getFileMetadata().setStudyVersion( studyVersion );
                 studyVersion.getFileMetadatas().add(fileBean.getFileMetadata());
                 fileBean.getStudyFile().setStudy(study );
                 // don't need to set study side, since we're no longer using persistence cache
                 //study.getStudyFiles().add(fileBean.getStudyFile());
                 //fileBean.addFiletoStudy(study);
+                
+//                logger.log(Level.INFO, "before persist: fileBean={0}", xstream.toXML(fileBean));
 
                 em.persist(fileBean.getStudyFile());
                 em.persist(fileBean.getFileMetadata());
                 
             } else {
+                logger.log(Level.INFO, "merging the data of this file: local file system case:");
                 //fileBean.getStudyFile().setSubsettable(true);
                 em.merge(fileBean.getStudyFile());
             }
+            
+            logger.log(Level.INFO, "---------- processing of this fileBeans ends here");
         }
+        logger.log(Level.INFO, "========== working on each of the fileBeans: while ends here");
         // calcualte UNF for study version
         try {
             studyVersion.getMetadata().setUNF(new DSBWrapper().calculateUNF(studyVersion));

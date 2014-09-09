@@ -99,7 +99,6 @@ public class StudyFileServiceBean implements StudyFileServiceLocal {
     
     
     
-    
 
     private static final Logger logger = Logger.getLogger("edu.harvard.iq.dvn.core.study.StudyFileServiceBean");
 

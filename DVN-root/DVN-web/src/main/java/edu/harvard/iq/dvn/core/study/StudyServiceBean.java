@@ -38,21 +38,23 @@ import edu.harvard.iq.dvn.core.harvest.HarvestFormatType;
 import edu.harvard.iq.dvn.core.harvest.HarvestStudyServiceLocal;
 import edu.harvard.iq.dvn.core.index.IndexServiceLocal;
 import edu.harvard.iq.dvn.core.mail.MailServiceLocal;
+import edu.harvard.iq.dvn.core.storage.IrodsConfigurationBean;
+import edu.harvard.iq.dvn.core.storage.IrodsStorageServiceBean;
 import edu.harvard.iq.dvn.core.study.StudyVersion.VersionState;
 import edu.harvard.iq.dvn.core.util.FileUtil;
 import edu.harvard.iq.dvn.core.util.StringUtil;
 import edu.harvard.iq.dvn.core.util.TwitterUtil;
 import edu.harvard.iq.dvn.core.vdc.*;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter; 
-import java.io.BufferedReader; 
 import java.io.InputStreamReader; 
+import java.io.OutputStream; 
+import java.io.PrintWriter; 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Timestamp;
@@ -118,6 +120,12 @@ public class StudyServiceBean implements edu.harvard.iq.dvn.core.study.StudyServ
     @EJB
     MailServiceLocal mailService;
     
+    @EJB 
+    IrodsConfigurationBean irodsConfigBean;
+    
+    
+    @EJB
+    IrodsStorageServiceBean irodsStorageService;
     
     private static final Logger logger = 
             Logger.getLogger("edu.harvard.iq.dvn.core.study.StudyServiceBean");
@@ -1987,7 +1995,8 @@ public class StudyServiceBean implements edu.harvard.iq.dvn.core.study.StudyServ
         }
         logger.log(Level.INFO, "Odum-TBM: [export call] set up the full path");
         File exportFile = new File(studyDir, fileName);
-        
+        logger.log(Level.INFO, "DDI-etcFile :exportFile.getAbsolutePath={0}", exportFile.getAbsolutePath());
+        logger.log(Level.INFO, "for irods cases, the above file must be deleted once it is moved");
         
         
         OutputStream os = null;
@@ -2008,6 +2017,27 @@ public class StudyServiceBean implements edu.harvard.iq.dvn.core.study.StudyServ
         }
 
     //  study.setLastExportTime(new Date());
+        
+        // here for irods cases
+        // copy the exportFile to the irods node
+        if (irodsConfigBean.isIRODScase(study)) {
+            String storageDir = irodsConfigBean.getIRODSStorageDir(study);
+
+            logger.log(Level.INFO,
+                    "+++++++++++ studyServiceBean: irods-storage service is called +++++++++++ ");
+
+            //InputStream is = new FileInputStream(exportFile.getAbsolutePath());
+            // 1st arg:dir
+            // 2nd arg: file name
+            // 3rd arg: InputStream or File
+            logger.log(Level.INFO, "storageDir={0}", storageDir);// eg: TEST/ODUM-IRODS_2222
+            logger.log(Level.INFO, "Export FileName()={0}", fileName); // eg: 84
+            logger.log(Level.INFO, "uploading the file to the irods started");
+
+            irodsStorageService.saveFile(storageDir, fileName, exportFile);
+            logger.log(Level.INFO, "\"+++++++++++ uploading the file to the irods ended");
+        }
+        
 
     }
 

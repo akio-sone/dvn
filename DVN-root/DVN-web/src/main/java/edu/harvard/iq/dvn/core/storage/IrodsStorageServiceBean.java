@@ -7,6 +7,8 @@ package edu.harvard.iq.dvn.core.storage;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Calendar;
@@ -69,7 +71,7 @@ public class IrodsStorageServiceBean {
 
     @PostConstruct
     void init() {
-        logger.log(Level.INFO, "FileUploadManagedBean is created");
+        logger.log(Level.INFO, "IrodsStorageServiceBean is created");
 //        session = modeShapeServiceBean.getSession();
         if (modeShapeServiceBean.getRepository() == null) {
             logger.log(Level.SEVERE, "repository is still null");
@@ -142,6 +144,15 @@ public class IrodsStorageServiceBean {
 //                );
 //            }
             String pathToFile = "/irodsGrid/dataverse/studies/"+dir+"/"+fileName;
+            logger.log(Level.INFO, "pathToFile={0}", pathToFile);
+            
+            if (session.nodeExists(pathToFile)){
+                logger.log(Level.INFO, "node exisitence check:{0} exists", pathToFile);
+            } else {
+                logger.log(Level.INFO, "node exisitence check:{0} does not exist", pathToFile);
+            }
+            
+            
             tools.uploadFile(session, pathToFile, in);
 
             session.save();
@@ -160,6 +171,62 @@ public class IrodsStorageServiceBean {
     }
 
     
+    
+    public void removeNode(String dir, String fileName){
+        logger.log(Level.INFO, "================== removeNode starts here ==================");
+        String workspaceName = "default";
+        session = null;
+        try {
+            session = modeShapeServiceBean.getRepository().login(workspaceName);
+//            logger.log(Level.INFO, "dumping repository keys");
+//            for (String s : modeShapeServiceBean.getRepository().getDescriptorKeys()) {
+//                logger.log(Level.INFO,
+//                        "repository:descriptors:key={0}=>{1}",
+//                        new Object[]{s, modeShapeServiceBean.getRepository().getDescriptorValue(s)}
+//                );
+//            }
+            String pathToFile = "/irodsGrid/dataverse/studies/"+dir+"/"+fileName;
+            logger.log(Level.INFO, "removeNode: pathToFile={0}", pathToFile);
+            
+            boolean fileExists = session.nodeExists(pathToFile);
+            if (fileExists){
+                logger.log(Level.INFO, "removeNode: node:{0} exists and remove it", pathToFile);
+                Node fileNode = session.getNode(pathToFile);
+                
+                fileNode.remove();
+                
+                session.save();
+            } else {
+                logger.log(Level.INFO, "removeNode: node:{0} does not exist: no remove action", pathToFile);
+            }
+            
+            logger.log(Level.INFO, "removeNode: check whether node:{0} exists one more time", pathToFile);
+            if (session.nodeExists(pathToFile)){
+                logger.log(Level.INFO, "removeNode: node:{0} exist right now", pathToFile);
+            } else {
+                logger.log(Level.INFO, "removeNode: node:{0} no longer exists", pathToFile);
+            }
+            
+        } catch (NoSuchWorkspaceException ex) {
+            logger.log(Level.SEVERE, "NoSuchWorkspaceException", ex);
+        } catch (RepositoryException ex) {
+            logger.log(Level.SEVERE, "RepositoryException", ex);
+        } finally {
+            if (session != null) {
+                session.logout();
+            }
+        }
+        
+        logger.log(Level.INFO, "================== removeNode ends here ==================");
+    }
+    
+    
+    
+    
+    
+    
+    
+    
     public void saveFile(String dir, String fileName, File file) {
         logger.log(Level.INFO, " ================== saveFile(File case) starts here ==================");
         String workspaceName = "default";
@@ -174,6 +241,14 @@ public class IrodsStorageServiceBean {
 //                );
 //            }
             String pathToFile = "/irodsGrid/dataverse/studies/"+dir+"/"+fileName;
+            logger.log(Level.INFO, "pathToFile={0}", pathToFile);
+            if (session.nodeExists(pathToFile)){
+                logger.log(Level.INFO, "node exisitence check:{0} exists", pathToFile);
+            } else {
+                logger.log(Level.INFO, "node exisitence check:{0} does not exist", pathToFile);
+            }
+            
+            
             tools.uploadFile(session, pathToFile, file);
 
             session.save();
@@ -193,7 +268,7 @@ public class IrodsStorageServiceBean {
     
     
     public void saveFileWithoutJcrTools(String dir, String fileName, InputStream in) {
-
+        logger.log(Level.INFO, "+++++ saveFileWithoutJcrTools: inputstream case: starts here");
         String workspaceName = "default";
         try {
 
@@ -207,7 +282,7 @@ public class IrodsStorageServiceBean {
             Node dsRootNode = null;
             try {
                 logger.log(Level.INFO, "try to get the ds-root-node: /irodsGrid");
-                dsRootNode = session.getNode("/irodsGrid/");
+                dsRootNode = session.getNode("/irodsGrid/dataverse/studies/");
             } catch (PathNotFoundException ex) {
                 logger.log(Level.INFO, "PathNotFoundException was caught: /irodsGrid does not exist");
                 logger.log(Level.INFO, "creating /irodsGrid node");
@@ -255,8 +330,16 @@ public class IrodsStorageServiceBean {
                 session.logout();
             }
         }
+        logger.log(Level.INFO, "+++++ saveFileWithoutJcrTools: inputstream case: ends here");
     }
 
 
-    
+    public void saveFileWithoutJcrTools(String dir, String fileName, File file) 
+            throws FileNotFoundException{
+//        try {
+            saveFileWithoutJcrTools(dir, fileName, new FileInputStream(file));
+//        } catch (FileNotFoundException ex) {
+//            logger.log(Level.SEVERE, "Source File is not found", ex);
+//        }
+    }
 }

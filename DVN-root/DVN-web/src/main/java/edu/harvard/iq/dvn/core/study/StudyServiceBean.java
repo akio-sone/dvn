@@ -48,6 +48,7 @@ import edu.harvard.iq.dvn.core.vdc.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -2021,21 +2022,45 @@ public class StudyServiceBean implements edu.harvard.iq.dvn.core.study.StudyServ
         // here for irods cases
         // copy the exportFile to the irods node
         if (irodsConfigBean.isIRODScase(study)) {
-            String storageDir = irodsConfigBean.getIRODSStorageDir(study);
-
             logger.log(Level.INFO,
                     "+++++++++++ studyServiceBean: irods-storage service is called +++++++++++ ");
+            String storageDir = irodsConfigBean.getIRODSStorageDir(study);
 
-            //InputStream is = new FileInputStream(exportFile.getAbsolutePath());
-            // 1st arg:dir
+            
+
+            // 1st arg: relative dir
             // 2nd arg: file name
             // 3rd arg: InputStream or File
             logger.log(Level.INFO, "storageDir={0}", storageDir);// eg: TEST/ODUM-IRODS_2222
             logger.log(Level.INFO, "Export FileName()={0}", fileName); // eg: 84
             logger.log(Level.INFO, "uploading the file to the irods started");
 
-            irodsStorageService.saveFile(storageDir, fileName, exportFile);
-            logger.log(Level.INFO, "\"+++++++++++ uploading the file to the irods ended");
+            InputStream is = null;
+            try {
+                if (exportFile.exists() && exportFile.length() > 0L) {
+                    logger.log(Level.INFO, "file to be exported exists:{0}",
+                            exportFile.getAbsoluteFile());
+                    is = new FileInputStream(exportFile);
+                    irodsStorageService.removeNode(storageDir, fileName);
+                    irodsStorageService.saveFile(storageDir, fileName, is);
+                    //irodsStorageService.saveFileWithoutJcrTools(storageDir, fileName, is);
+                    logger.log(Level.INFO, "copying the file to the IRODS finished");
+
+                } else {
+                    logger.log(Level.WARNING, "export file does not exist and uploading failed");
+                }
+
+            } catch (FileNotFoundException ex) {
+                logger.log(Level.SEVERE, "source file was not found", ex);
+            } finally {
+                try {
+                    is.close();
+                } catch (IOException ex) {
+                    logger.log(Level.SEVERE, "", ex);
+                }
+            }
+
+            logger.log(Level.INFO, "+++++++++++ uploading the file to the irods ended");
         }
         
 

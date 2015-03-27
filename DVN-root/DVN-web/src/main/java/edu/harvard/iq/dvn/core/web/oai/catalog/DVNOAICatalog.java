@@ -77,6 +77,7 @@ import edu.harvard.iq.dvn.core.vdc.LockssConfig;
 import edu.harvard.iq.dvn.core.vdc.VDC;
 import java.text.DateFormat;
 import java.util.TimeZone;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.naming.InitialContext;
 
@@ -546,6 +547,9 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
      */
     public Map listRecords(String from, String until, String set, String metadataPrefix)
         throws CannotDisseminateFormatException, NoItemsMatchException {
+        
+        logger.log(Level.INFO, "+++++++++++++ DVNOAICatalog#listRecords(...) is called +++++++++++++ ");
+        
         purge(); // clean out old resumptionTokens
         Map listRecordsMap = new HashMap();
         ArrayList records = new ArrayList();
@@ -648,6 +652,7 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
      */
     public Map listRecords(String resumptionToken)
         throws BadResumptionTokenException {
+        logger.log(Level.INFO, "+++++++++++++ DVNOAICatalog#listRecords(resumptionToken) is called +++++++++++++ ");
         Map listRecordsMap = new HashMap();
         ArrayList records = new ArrayList();
         purge(); // clean out old resumptionTokens

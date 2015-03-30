@@ -70,12 +70,15 @@ import ORG.oclc.oai.server.verb.IdDoesNotExistException;
 import ORG.oclc.oai.server.verb.NoItemsMatchException;
 import ORG.oclc.oai.server.verb.NoMetadataFormatsException;
 import ORG.oclc.oai.server.verb.NoSetHierarchyException;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
 import edu.harvard.iq.dvn.core.catalog.CatalogServiceLocal;
 import edu.harvard.iq.dvn.core.harvest.HarvestStudy;
 import edu.harvard.iq.dvn.core.harvest.HarvestStudyServiceLocal;
 import edu.harvard.iq.dvn.core.vdc.LockssConfig;
 import edu.harvard.iq.dvn.core.vdc.VDC;
 import java.text.DateFormat;
+import java.util.Enumeration;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -93,13 +96,18 @@ import javax.naming.InitialContext;
  * @author Jeffrey A. Young, OCLC Online Computer Library Center
  */
 public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializable  {
-    private static final Logger logger = Logger.getLogger("edu.harvard.iq.dvn.core.web.oai.catalog.DVNOAICatalog");
+    
+    private static final Logger logger = 
+        Logger.getLogger("edu.harvard.iq.dvn.core.web.oai.catalog.DVNOAICatalog");
     /**
      * maximum number of entries to return for ListRecords and ListIdentifiers
      */
     private static int maxListSize;
 
     private static final String INET_ADDRESS = System.getProperty("dvn.inetAddress");
+    
+    
+    XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
 
     /**
      * pending resumption tokens
@@ -153,6 +161,14 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
             throw new IllegalArgumentException("DVNOAICatalog.maxListSize is missing from the properties file");
         } else {
             DVNOAICatalog.maxListSize = Integer.parseInt(maxListSize);
+        }
+        
+        logger.log(Level.INFO, "DVNOAICatalog:constructor: enumerating arg properties");
+        Enumeration e = properties.propertyNames();
+        while (e.hasMoreElements()) {
+          String key = (String) e.nextElement();
+          logger.log(Level.INFO, "key[{0}]=value[{1}]", 
+              new Object[]{key, properties.getProperty(key)});
         }
         
         /************************************************************
@@ -549,6 +565,8 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
         throws CannotDisseminateFormatException, NoItemsMatchException {
         
         logger.log(Level.INFO, "+++++++++++++ DVNOAICatalog#listRecords(...) is called +++++++++++++ ");
+        logger.log(Level.INFO, "set name={0}", set);
+        logger.log(Level.INFO, "metadataPrefix={0}", metadataPrefix);
         
         purge(); // clean out old resumptionTokens
         Map listRecordsMap = new HashMap();
@@ -557,12 +575,14 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
         /**********************************************************************
          * YOUR CODE GOES HERE
          **********************************************************************/
+        logger.log(Level.INFO, "calling CatalogServiceBean");
         CatalogServiceLocal catalogService = null;
         try {
             catalogService=(CatalogServiceLocal)new InitialContext().lookup("java:comp/env/catalogService");
         } catch(Exception e) {
             e.printStackTrace();
         }
+        
         /* web
         Study [] updatedStudies = catalogService.listStudies(from, until, "TEST", "ddi");
             
@@ -577,13 +597,16 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
                  
 //        String[]  xmlRecords = new String[records.size()]; //web
         
-         
+         logger.log(Level.INFO, "calling CatalogServiceBean#listRecords method =>HarvestStudyServiceBean is called");
         String[]  xmlRecords = catalogService.listRecords(from, until, set, metadataPrefix);  //ejb
+        logger.log(Level.INFO, "xmlRecords.length={0}", xmlRecords.length);
 
         /* Get some records from your database */
         String[] nativeItem = xmlRecords; //ejb
         if (nativeItem.length == 0){
             throw new NoItemsMatchException();
+        } else {
+            logger.log(Level.INFO, "nativeItem.length={0}", nativeItem.length);
         }
 //        String[] nativeItem = (String[]) records.toArray(xmlRecords); //web
         int count;
@@ -637,6 +660,10 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
          * END OF CUSTOM CODE SECTION
          ***********************************************************************/
         listRecordsMap.put("records", records.iterator());
+        logger.log(Level.INFO, "listRecordsMap.size={0}", listRecordsMap.size());
+        
+        logger.log(Level.INFO, "listRecordsMap={0}", xstream.toXML(listRecordsMap));
+        logger.log(Level.INFO, "\"+++++++++++++ leaving DVNOAICatalog#listRecords(...) +++++++++++++");
         return listRecordsMap;
     }
 
@@ -742,6 +769,7 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
          * END OF CUSTOM CODE SECTION
          ***********************************************************************/
         listRecordsMap.put("records", records.iterator());
+        logger.log(Level.INFO, "+++++++++++++ leaving DVNOAICatalog#listRecords(resumptionToken)  +++++++++++++ ");
         return listRecordsMap;
     }
 

@@ -40,8 +40,11 @@ package edu.harvard.iq.dvn.core.web.oai.catalog;
 
 import ORG.oclc.oai.server.catalog.RecordFactory;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * XMLRecordFactory converts native XML "items" to "record" Strings.
@@ -50,6 +53,10 @@ import java.util.Properties;
  * <metadata> element contains multiple metadataFormats from which to choose.
  */
 public class DVNXMLRecordFactory extends RecordFactory implements java.io.Serializable  {
+    
+    private static final Logger logger = Logger.getLogger(DVNXMLRecordFactory.class.getName());
+    
+    
     private static final String identifierStart = "<identifier>";
     private static final String identifierEnd = "</identifier>";
     private static final String datestampStart = "<datestamp>";
@@ -67,8 +74,17 @@ public class DVNXMLRecordFactory extends RecordFactory implements java.io.Serial
      * @exception IllegalArgumentException Something is wrong with the argument.
      */
     public DVNXMLRecordFactory(Properties properties)
-	throws IllegalArgumentException {
-	super(properties);
+    throws IllegalArgumentException {
+    	super(properties);
+        
+        logger.log(Level.INFO, "DVNXMLRecordFactory:constructor: enumerating arg properties");
+        Enumeration e = properties.propertyNames();
+        while (e.hasMoreElements()) {
+          String key = (String) e.nextElement();
+          logger.log(Level.INFO, "key[{0}]=value[{1}]", 
+              new Object[]{key, properties.getProperty(key)});
+        }
+        
     }
 
     /**

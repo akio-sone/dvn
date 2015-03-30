@@ -41,6 +41,9 @@ package edu.harvard.iq.dvn.core.web.oai.catalog;
 import ORG.oclc.oai.server.crosswalk.Crosswalk;
 import java.util.Properties;
 import ORG.oclc.oai.server.verb.CannotDisseminateFormatException;
+import java.util.Enumeration;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Convert native "item" to oai_dc. In this case, the native "item"
@@ -50,6 +53,9 @@ import ORG.oclc.oai.server.verb.CannotDisseminateFormatException;
  * involves pulling out the one that is requested.
  */
 public class DVNXML2ddi extends Crosswalk implements java.io.Serializable  {
+    
+    private static final Logger logger = Logger.getLogger(DVNXML2ddi.class.getName());
+    
     private static final String elementName = "codeBook";
     private static final String elementStart = "<" + elementName;
     private static final String elementEnd = elementName + ">";
@@ -63,6 +69,14 @@ public class DVNXML2ddi extends Crosswalk implements java.io.Serializable  {
     public DVNXML2ddi(Properties properties) {
 //	super("http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd");
         super("http://www.icpsr.umich.edu/DDI http://www.icpsr.umich.edu/DDI/Version2-0.xsd");
+        
+        logger.log(Level.INFO, "DVNXML2ddi:constructor: enumerating arg properties");
+        Enumeration e = properties.propertyNames();
+        while (e.hasMoreElements()) {
+          String key = (String) e.nextElement();
+          logger.log(Level.INFO, "key[{0}]=value[{1}]", 
+              new Object[]{key, properties.getProperty(key)});
+        }
     }
 
     /**

@@ -52,6 +52,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -182,9 +183,9 @@ public class CatalogServiceBean implements CatalogServiceLocal {
     }
 
      public String []  listRecords(String from, String until, String set, String metadataPrefix) throws NoItemsMatchException{
-        
+         logger.log(Level.INFO, "CatalogServiceBean#listRecords(...) begins here");
         /*SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");*/
-        
+         logger.log(Level.INFO, "metadataPrefix={0}", metadataPrefix);
         
         DateFormat gmtFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         TimeZone gmtTime = TimeZone.getTimeZone("GMT");
@@ -192,8 +193,11 @@ public class CatalogServiceBean implements CatalogServiceLocal {
         List <String> records = new ArrayList();
         
         try {
+            logger.log(Level.INFO, "calling HarvestStudyServiceBean#findHarvestStudiesBySetName method");
             List<HarvestStudy> harvestStudies = harvestStudyService.findHarvestStudiesBySetName(set, gmtFormat.parse(from), gmtFormat.parse(until) );
 
+            logger.log(Level.INFO, "returned harvestStudies.size={0}", harvestStudies.size());
+            logger.log(Level.INFO, "building tags such as identifier, datestamp, statusu ...");
             for (HarvestStudy hs : harvestStudies) {
                 String record = "<identifier>" + ( set != null ? set + "//" : "") +  hs.getGlobalId() + "</identifier>";
                 record += "<datestamp>" + gmtFormat.format(hs.getLastUpdateTime()) + "</datestamp>";            
@@ -232,6 +236,7 @@ public class CatalogServiceBean implements CatalogServiceLocal {
             }
             logger.severe(stackTrace);
         }
+         logger.log(Level.INFO, "recods.size={0}", records.size());
         String [] s = new String[records.size()];
         return records.toArray(s);        
      }

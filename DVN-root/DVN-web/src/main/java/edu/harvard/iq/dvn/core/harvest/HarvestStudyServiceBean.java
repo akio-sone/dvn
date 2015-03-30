@@ -33,6 +33,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
@@ -45,6 +47,9 @@ import javax.persistence.Query;
  */
 @Stateless
 public class HarvestStudyServiceBean implements HarvestStudyServiceLocal {
+    
+    private static final Logger logger = 
+        Logger.getLogger(HarvestStudyServiceBean.class.getName());
 
     @EJB 
     OAISetServiceLocal oaiSetService;    
@@ -151,7 +156,7 @@ public class HarvestStudyServiceBean implements HarvestStudyServiceLocal {
     }    
     
     public List <HarvestStudy> findHarvestStudiesBySetName(String setName, Date from, Date until) {
-        
+        logger.log(Level.INFO, "HarvestStudyServiceBean#findHarvestStudiesBySetName method is called");
         String queryString ="SELECT h from HarvestStudy h";
         queryString += setName != null ? " where h.setName = :setName" : " where h.setName is null";
         queryString += from != null ? " and h.lastUpdateTime >= :from" : "";

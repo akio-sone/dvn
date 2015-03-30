@@ -41,7 +41,11 @@
             <name>ICEfaces Repo</name>
             <url>http://anonsvn.icefaces.org/repo/maven2/releases/</url>
         </repository>
-        
+        <repository>
+            <id>xstream</id>
+            <name>xstream repository</name>
+            <url>http://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -533,7 +537,15 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.6.16</version>
         </dependency>        
-                                                                                                                                                                                                                                        
+
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.4.8</version>
+        </dependency>
+
+
+
     </dependencies>
 
     <build>

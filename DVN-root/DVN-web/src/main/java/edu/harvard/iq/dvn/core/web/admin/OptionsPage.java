@@ -127,6 +127,9 @@ public class OptionsPage extends VDCBaseBean  implements java.io.Serializable {
     @PersistenceContext(unitName = "VDCNet-ejbPU")
     EntityManager em;
     
+    private static final Logger logger = Logger.getLogger(OptionsPage.class.getName());
+    
+    
     public void preRenderView() {
         super.preRenderView();
         if (vdc != null) {
@@ -3626,8 +3629,58 @@ public class OptionsPage extends VDCBaseBean  implements java.io.Serializable {
             addMessage( "exportMessage", "Export failed: An unknown exception occurred while updating harvest studies.");   
         }
         return null;
-    }       
-     
+    }
+    
+    
+    
+    public String updateDatabridge_action(){
+        
+        try {
+            //harvestStudyService.updateHarvestStudies();
+            logger.log(Level.INFO, "OptionPage#updateDatabridge_action called");
+            
+            
+            
+            addMessage( "exportMessage:databridge", "sending the OAI set succeeded.");
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "OptionPage#updateDatabridge_action: sending the OAI set failed");
+            addMessage( "exportMessage:databridge", "Export failed: An unknown exception occurred while sending the selected OAI set to the Databridge Que");   
+        }
+        logger.log(Level.INFO, "leaving OptionPage#updateDatabridge_action");
+        return null;
+        
+        
+    }
+    
+    
+    
+    String exportOAIspec;
+
+    public String getExportOAIspec() {
+        return exportOAIspec;
+    }
+
+    public void setExportOAIspec(String exportOAIspec) {
+        this.exportOAIspec = exportOAIspec;
+    }
+    
+    private List<SelectItem> exportOAISelectItems;
+    
+    public List<SelectItem> getExportOAISpecSets(){
+
+        exportOAISelectItems = new ArrayList<SelectItem>();
+        for(OAISet oaiSet: oaiService.findAll()) {
+            // Don't show OAISets that have been created for dataverse-level Lockss Harvesting
+            //if (oaiSet.getLockssConfig()==null || oaiSet.getLockssConfig().getVdc()==null) {
+                exportOAISelectItems.add(new SelectItem(oaiSet.getSpec(), oaiSet.getName()));
+            //}
+        }
+        return exportOAISelectItems;
+    }
+    
+    
+    
+    
     public String exportAll_action() {
         try {
             List<Long> allStudyIds = studyService.getAllStudyIds();
@@ -3640,7 +3693,7 @@ public class OptionsPage extends VDCBaseBean  implements java.io.Serializable {
         }    
         
         return null;
-    }  
+    }
     
     public String exportDV_action() {
         try {

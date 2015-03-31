@@ -3634,11 +3634,19 @@ public class OptionsPage extends VDCBaseBean  implements java.io.Serializable {
     
     
     public String updateDatabridge_action(){
+        logger.log(Level.INFO, "++++++++++ entering OptionPage#updateDatabridge_action method ++++++++++");
+        
+        if (exportOAIspec== null){
+            logger.log(Level.INFO, "OAI set is not selected");
+            addMessage( "exportMessage:databridge", "Export failed: No OAI Set is selected");
+            return null;
+        } else {
+            logger.log(Level.INFO, "selected OAI set={0}", exportOAIspec);
+        }
         
         try {
             //harvestStudyService.updateHarvestStudies();
-            logger.log(Level.INFO, "OptionPage#updateDatabridge_action called");
-            
+            logger.log(Level.INFO, "dispatching the request OAI set({0}): to be implemented soon", exportOAIspec);
             
             
             addMessage( "exportMessage:databridge", "sending the OAI set succeeded.");
@@ -3669,6 +3677,8 @@ public class OptionsPage extends VDCBaseBean  implements java.io.Serializable {
     public List<SelectItem> getExportOAISpecSets(){
 
         exportOAISelectItems = new ArrayList<SelectItem>();
+
+        exportOAISelectItems.add(new SelectItem(null, "Select OAI Set"));
         for(OAISet oaiSet: oaiService.findAll()) {
             // Don't show OAISets that have been created for dataverse-level Lockss Harvesting
             //if (oaiSet.getLockssConfig()==null || oaiSet.getLockssConfig().getVdc()==null) {

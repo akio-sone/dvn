@@ -169,11 +169,11 @@
             <artifactId>harvester2</artifactId>
             <version>2007-05-31-generated</version>
         </dependency>
-        <dependency>
+<!--        <dependency>
             <groupId>org.oclc</groupId>
             <artifactId>oaicat</artifactId>
             <version>2007-10-16-generated</version>
-        </dependency>
+        </dependency>-->
 
         <!-- ejb group-->
         <!-- from the Central or other public repositories -->

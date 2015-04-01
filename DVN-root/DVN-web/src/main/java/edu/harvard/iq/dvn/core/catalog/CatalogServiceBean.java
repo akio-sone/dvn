@@ -183,7 +183,7 @@ public class CatalogServiceBean implements CatalogServiceLocal {
     }
 
      public String []  listRecords(String from, String until, String set, String metadataPrefix) throws NoItemsMatchException{
-         logger.log(Level.INFO, "CatalogServiceBean#listRecords(...) begins here");
+         logger.log(Level.INFO, "=========== CatalogServiceBean#listRecords(...) begins here ==========");
         /*SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");*/
          logger.log(Level.INFO, "metadataPrefix={0}", metadataPrefix);
         
@@ -197,7 +197,7 @@ public class CatalogServiceBean implements CatalogServiceLocal {
             List<HarvestStudy> harvestStudies = harvestStudyService.findHarvestStudiesBySetName(set, gmtFormat.parse(from), gmtFormat.parse(until) );
 
             logger.log(Level.INFO, "returned harvestStudies.size={0}", harvestStudies.size());
-            logger.log(Level.INFO, "building tags such as identifier, datestamp, statusu ...");
+            logger.log(Level.INFO, "building tags such as identifier, datestamp, status ...");
             for (HarvestStudy hs : harvestStudies) {
                 String record = "<identifier>" + ( set != null ? set + "//" : "") +  hs.getGlobalId() + "</identifier>";
                 record += "<datestamp>" + gmtFormat.format(hs.getLastUpdateTime()) + "</datestamp>";            
@@ -229,15 +229,16 @@ public class CatalogServiceBean implements CatalogServiceLocal {
             logger.severe(e.getMessage());
             
             String stackTrace = "StackTrace: \n";
-            logger.severe("Exception caused by: "+e+"\n");
+            logger.log(Level.SEVERE, "Exception caused by: {0}", e);
             StackTraceElement[] ste = e.getStackTrace();
             for(int m=0;m<ste.length;m++) {
                 stackTrace+=ste[m].toString()+"\n";
             }
             logger.severe(stackTrace);
         }
-         logger.log(Level.INFO, "recods.size={0}", records.size());
+        logger.log(Level.INFO, "records.size={0}", records.size());
         String [] s = new String[records.size()];
+        logger.log(Level.INFO, "=========== leaving CatalogServiceBean#listRecords(...) ==========");        
         return records.toArray(s);        
      }
      

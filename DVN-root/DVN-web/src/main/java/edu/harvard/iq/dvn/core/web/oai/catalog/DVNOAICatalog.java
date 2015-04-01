@@ -156,6 +156,8 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
      */
     public DVNOAICatalog(Properties properties) {
 //    dummyDb[0] =  records ;
+        logger.log(Level.INFO, "########## DVNOAICatalog#constructor() is called ##########");
+        
         String maxListSize = properties.getProperty("DVNOAICatalog.maxListSize");
         if (maxListSize == null) {
             throw new IllegalArgumentException("DVNOAICatalog.maxListSize is missing from the properties file");
@@ -170,7 +172,7 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
           logger.log(Level.INFO, "key[{0}]=value[{1}]", 
               new Object[]{key, properties.getProperty(key)});
         }
-        
+        logger.log(Level.INFO, "########## leaving DVNOAICatalog#constructor ##########");
         /************************************************************
          * YOUR CODE GOES HERE
          * Load other properties you need to initialize your database
@@ -599,7 +601,8 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
         
          logger.log(Level.INFO, "calling CatalogServiceBean#listRecords method =>HarvestStudyServiceBean is called");
         String[]  xmlRecords = catalogService.listRecords(from, until, set, metadataPrefix);  //ejb
-        logger.log(Level.INFO, "xmlRecords.length={0}", xmlRecords.length);
+        logger.log(Level.INFO, "xmlRecords.length={0} from CatalogServiceBean", 
+                xmlRecords.length);
 
         /* Get some records from your database */
         String[] nativeItem = xmlRecords; //ejb
@@ -663,7 +666,7 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
         logger.log(Level.INFO, "listRecordsMap.size={0}", listRecordsMap.size());
         
         logger.log(Level.INFO, "listRecordsMap={0}", xstream.toXML(listRecordsMap));
-        logger.log(Level.INFO, "\"+++++++++++++ leaving DVNOAICatalog#listRecords(...) +++++++++++++");
+        logger.log(Level.INFO, "+++++++++++++ leaving DVNOAICatalog#listRecords(...) +++++++++++++");
         return listRecordsMap;
     }
 
@@ -785,12 +788,16 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
      */
     private String constructRecord(Object nativeItem, String metadataPrefix)
         throws CannotDisseminateFormatException {
+        logger.log(Level.INFO, "+++++++++++++ DVNOAICatalog#constructRecord(...) starts here +++++++++++++ ");
+        
         String schemaURL = null;
 
         if (metadataPrefix != null) {
             if ((schemaURL = getCrosswalks().getSchemaURL(metadataPrefix)) == null)
                 throw new CannotDisseminateFormatException(metadataPrefix);
         }
+        logger.log(Level.INFO, "+++++++++++++ leaving DVNOAICatalog#constructRecord(...) and calling RecordFactory class +++++++++++++ ");
+        
         return getRecordFactory().create(nativeItem, schemaURL, metadataPrefix);
     }
 

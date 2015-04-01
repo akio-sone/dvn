@@ -20,9 +20,14 @@ import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
 import ORG.oclc.oai.util.OAIUtil;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RecordStringHandler extends DefaultHandler {
-    private static final boolean debug = false;
+    
+//    private static final boolean debug = false;
+    private static final Logger logger = Logger.getLogger(RecordStringHandler.class.getName());
+    
     private static final String OAI_NS = "http://www.openarchives.org/OAI/2.0/";
     private static final String DATABASE_NS = "http://www.oclc.org/pears/";
 //     private static final String OAI_DC_NS = "http://www.openarchives.org/OAI/2.0/oai_dc/";
@@ -56,10 +61,14 @@ public class RecordStringHandler extends DefaultHandler {
     
     public void startElement(String uri, String localName, String qName,
 			     Attributes attrs) {
-        if (debug) {
-            System.out.println("startElement: " + uri + ", " + localName + ", "
-                               + qName + ", ");
-        }
+//        if (debug) {
+//            System.out.println("startElement: " + uri + ", " + localName + ", "
+//                               + qName + ", ");
+//        }
+        
+        logger.log(Level.INFO, "startElement:{0},{1},{2}", 
+                new Object[]{uri, localName, qName});
+        
 	if (OAI_NS.equals(uri) && "record".equals(localName)) {
 	    setSpecs = new ArrayList();
 	    recordFlag++;
@@ -144,25 +153,45 @@ public class RecordStringHandler extends DefaultHandler {
 		HashMap nativeRecord = new HashMap();
 		nativeRecord.put("recordString", metadata.toString());
 //                 logger.debug(metadata.toString());
-                if (debug) {
-                    System.out.println("metadata: " + metadata.toString());
-                }
+//                if (debug) {
+//                    System.out.println("metadata: " + metadata.toString());
+//                }
+                
+                logger.log(Level.INFO, "metadata={0}", metadata.toString());
+                
                 nativeRecord.put("localIdentifier", identifier.toString());
-                if (debug) {
-                    System.out.println("localIdentifier=" + identifier.toString());
-                }
+//                if (debug) {
+//                    System.out.println("localIdentifier=" + identifier.toString());
+//                }
+                
+                logger.log(Level.INFO, "localIdentifier={0}", identifier.toString());
+                
                 nativeRecord.put("recordid", recordid.toString());
-                if (debug) {
-                    System.out.println("recordid=" + recordid.toString());
-                }
+//                if (debug) {
+//                    System.out.println("recordid=" + recordid.toString());
+//                }
+                
+                logger.log(Level.INFO, "recordid={0}", recordid.toString());
+                
+                
                 nativeRecord.put("schemaLocation", schemaLocation);
-                if (debug) {
-                    System.out.println("schemaLocation=" + schemaLocation);
-                }
+//                if (debug) {
+//                    System.out.println("schemaLocation=" + schemaLocation);
+//                }
+                
+                logger.log(Level.INFO, "schemaLocation={0}", schemaLocation);
+                
+                
+                
                 nativeRecord.put("datestamp", datestamp.toString());
-                if (debug) {
-                    System.out.println("datestamp=" + datestamp.toString());
-                }
+//                if (debug) {
+//                    System.out.println("datestamp=" + datestamp.toString());
+//                }
+                
+                
+                logger.log(Level.INFO, "datestamp={0}", datestamp.toString());
+                
+                
  		nativeRecord.put("setSpecs", setSpecs);
                 nativeRecords.put(recordid.toString().toLowerCase(), nativeRecord);
 		setSpecs = null;

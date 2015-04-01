@@ -23,6 +23,8 @@ import ORG.oclc.oai.server.crosswalk.Crosswalks;
 import ORG.oclc.oai.server.verb.CannotDisseminateFormatException;
 import ORG.oclc.oai.server.verb.NoMetadataFormatsException;
 import ORG.oclc.oai.util.OAIUtil;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * RecordFactory is responsible for pulling various pieces of information from native records
@@ -31,7 +33,10 @@ import ORG.oclc.oai.util.OAIUtil;
  * native records.
  */
 public abstract class RecordFactory {
-    public static final boolean debug=true;
+    
+    private static final Logger logger = 
+            Logger.getLogger(RecordFactory.class.getName());
+    // public static final boolean debug=true;
 //     private boolean encodeSetSpec = true;
     
     /**
@@ -50,11 +55,19 @@ public abstract class RecordFactory {
 //         if ("false".equals(properties.getProperty("RecordFactory.encodeSetSpec"))) {
 //             encodeSetSpec = false;
 //         }
-	crosswalks = new Crosswalks(properties);
+        logger.log(Level.INFO, "========== RecordFactory#constructor(Properties) starts here ==========");
+        logger.log(Level.INFO, "creating crosswalks instance with Properties");
+        crosswalks = new Crosswalks(properties);
+        logger.log(Level.INFO, "========== RecordFactory#constructor(Properties) ends here ==========");
     }
 
     public RecordFactory(HashMap crosswalkMap) {
-	crosswalks = new Crosswalks(crosswalkMap);
+        
+        logger.log(Level.INFO, "========== RecordFactory#constructor(HashMap) starts here ==========");
+        logger.log(Level.INFO, "creating crosswalks instance with HashMap");
+        crosswalks = new Crosswalks(crosswalkMap);
+        logger.log(Level.INFO, "========== RecordFactory#constructor(HashMap) ends here ==========");
+        
     }
 
     /**
@@ -275,7 +288,10 @@ public abstract class RecordFactory {
             String metadataPrefix, String identifier,
             String datestamp, Iterator setSpecs, Iterator abouts, boolean isDeleted)
     throws IllegalArgumentException, CannotDisseminateFormatException {
-        if (debug) System.out.println("RecordFactory.create");
+        
+        //if (debug) System.out.println("RecordFactory.create");
+        logger.log(Level.INFO, "========== RecordFactory#create() starts here ==========");
+        logger.log(Level.INFO, "building <record> from <header>");
         StringBuffer xmlRec = new StringBuffer();
         xmlRec.append("<record><header");
         if (isDeleted) {
@@ -303,9 +319,12 @@ public abstract class RecordFactory {
             }
         }
         xmlRec.append("</header>");
-        if (debug) System.out.println("RecordFactory.create: header finished");
+        //if (debug) System.out.println("RecordFactory.create: header finished");
+        logger.log(Level.INFO, "RecordFactory#create(): header finished");
         if (!isDeleted) {
-            if (debug) System.out.println("RecordFactory.create: starting metadata");
+            //if (debug) System.out.println("RecordFactory.create: starting metadata");
+            logger.log(Level.INFO, "RecordFactory#create(): starting metadata");
+            
             xmlRec.append("<metadata>");
             Iterator iterator = getCrosswalks().iterator();
             while (iterator.hasNext()) {
@@ -313,7 +332,10 @@ public abstract class RecordFactory {
                 String itemPrefix = (String) entry.getKey();
                 CrosswalkItem crosswalkItem = (CrosswalkItem)entry.getValue();
                 Crosswalk crosswalk = crosswalkItem.getCrosswalk();
-                if (debug) System.out.println("RecordFactory.create: crosswalk=" + crosswalk);
+                //if (debug) System.out.println("RecordFactory.create: crosswalk=" + crosswalk);
+                logger.log(Level.INFO, "RecordFactory#create():returned crosswalk={0}",
+                        crosswalk);
+                
                 if (schemaURL == null
                         || (metadataPrefix == null && crosswalk.getSchemaURL().equals(schemaURL))
                         || (metadataPrefix != null && itemPrefix.equals(metadataPrefix))) {
@@ -322,7 +344,9 @@ public abstract class RecordFactory {
                 }
             }
             xmlRec.append("</metadata>");
-            if (debug) System.out.println("RecordFactory.create: finished metadata");
+            //if (debug) System.out.println("RecordFactory.create: finished metadata");
+            logger.log(Level.INFO, "RecordFactory#create(): finished metadata");
+            
             if (abouts != null) {
                 while (abouts.hasNext()) {
                     xmlRec.append("<about>");
@@ -332,7 +356,10 @@ public abstract class RecordFactory {
             }
         }
         xmlRec.append("</record>");
-        if (debug) System.out.println("RecordFactory.create: return=" + xmlRec.toString());
+        logger.log(Level.INFO, "building <record> ended");
+        //if (debug) System.out.println("RecordFactory.create: return=" + xmlRec.toString());
+        logger.log(Level.INFO, "RecordFactory#create(): xmlRec to be return={0}", xmlRec.toString());
+        logger.log(Level.INFO, "========== leaving RecordFactory#create()  ==========");
         return xmlRec.toString();
     }
 

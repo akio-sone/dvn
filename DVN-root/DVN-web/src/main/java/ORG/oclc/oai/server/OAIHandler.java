@@ -44,6 +44,8 @@ import ORG.oclc.oai.server.catalog.AbstractCatalog;
 import ORG.oclc.oai.server.verb.BadVerb;
 import ORG.oclc.oai.server.verb.OAIInternalServerError;
 import ORG.oclc.oai.server.verb.ServerVerb;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * OAIHandler is the primary Servlet for OAICat.
@@ -59,7 +61,8 @@ public class OAIHandler extends HttpServlet {
     public static final String PROPERTIES_SERVLET_CONTEXT_ATTRIBUTE = OAIHandler.class.getName() + ".properties";
     
     private static final String VERSION = "1.5.56";
-    private static boolean debug = true;
+//    private static boolean debug = true;
+    private static final Logger logger = Logger.getLogger(OAIHandler.class.getName());
 
 //    private Transformer transformer = null;
 //    private boolean serviceUnavailable = false;
@@ -93,16 +96,37 @@ public class OAIHandler extends HttpServlet {
      */
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        
+        logger.log(Level.INFO, "+++++++++ OAIHandler#init() starts here");
         try {
             HashMap attributes = null;
             ServletContext context = getServletContext();
             Properties properties = (Properties) context.getAttribute(PROPERTIES_SERVLET_CONTEXT_ATTRIBUTE);
             if (properties == null) {
-                final String PROPERTIES_INIT_PARAMETER = "properties";
-                log.debug("OAIHandler.init(..): No '" + PROPERTIES_SERVLET_CONTEXT_ATTRIBUTE + "' servlet context attribute. Trying to use init parameter '" + PROPERTIES_INIT_PARAMETER + "'");
                 
-                String fileName = config.getServletContext().getInitParameter(PROPERTIES_INIT_PARAMETER);
+                final String PROPERTIES_INIT_PARAMETER = "properties";
+                
+                logger.log(Level.INFO, "properties is null");
+                
+                log.debug("OAIHandler.init(..): No '" + 
+                        PROPERTIES_SERVLET_CONTEXT_ATTRIBUTE + 
+                        "' servlet context attribute. Trying to use init parameter '" + 
+                        PROPERTIES_INIT_PARAMETER + "'");
+                
+                String fileName = 
+                        config.getServletContext().getInitParameter(PROPERTIES_INIT_PARAMETER);
+                
+                /*
+                    web.xml has the following context-param that is available from
+                    ServletContext
+                
+                    <context-param>
+                        <param-name>properties</param-name>
+                        <param-value>oaicat.properties</param-value>
+                    </context-param>
+                */
+                
+                logger.log(Level.INFO, "fileName taken from servlet config(web.xml)={0}", fileName);
+                
                 InputStream in;
                 try {
                     log.debug("fileName=" + fileName);
@@ -111,20 +135,30 @@ public class OAIHandler extends HttpServlet {
                     log.debug("file not found. Try the classpath: " + fileName);
                     in = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
                 }
+                
+                
                 if (in != null) {
+                    logger.log(Level.INFO, "properties file was found: Load the properties");
                     log.debug("file was found: Load the properties");
+                    
                     properties = new Properties();
+                    
                     properties.load(in);
+                    
+                    logger.log(Level.INFO, "calling OAIHandler#getAttributes(Properties) to add more data");
                     attributes = getAttributes(properties);
-                    if (debug) System.out.println("OAIHandler.init: fileName=" + fileName);
+                    
+                    // if (debug) System.out.println("OAIHandler.init: fileName=" + fileName);
+
                 }
             } else {
                 log.debug("Load context properties");
                 attributes = getAttributes(properties);
             }
-
+            logger.log(Level.INFO, "store the modified properties=attributes as the value of global in attributesMap");
             log.debug("Store global properties");
             attributesMap.put("global", attributes);
+            
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             throw new ServletException(e.getMessage());
@@ -141,31 +175,48 @@ public class OAIHandler extends HttpServlet {
             e.printStackTrace();
             throw new ServletException(e.getMessage());
         }
+        logger.log(Level.INFO, "+++++++++ OAIHandler#init() ends here");        
     }
     
     public HashMap getAttributes(Properties properties)
     throws Throwable {
+        
+        logger.log(Level.INFO, "+++++++++ OAIHandler#getAttributes(Properties) starts here");
+        
         HashMap attributes = new HashMap();
         Enumeration attrNames = getServletContext().getAttributeNames();
         while (attrNames.hasMoreElements()) {
             String attrName = (String)attrNames.nextElement();
             attributes.put(attrName, getServletContext().getAttribute(attrName));
         }
+        
+        logger.log(Level.INFO, "setting the value of OAIHandler.properties");
+        
         attributes.put("OAIHandler.properties", properties);
 //        String temp = properties.getProperty("OAIHandler.debug");
 //        if ("true".equals(temp)) debug = true;
-        String missingVerbClassName = properties.getProperty("OAIHandler.missingVerbClassName", "ORG.oclc.oai.server.verb.BadVerb");
+        String missingVerbClassName = 
+                properties.getProperty("OAIHandler.missingVerbClassName",
+                        "ORG.oclc.oai.server.verb.BadVerb");
+        
+        logger.log(Level.INFO, "setting the value of OAIHandler.missingVerbClass");
+        
         Class missingVerbClass = Class.forName(missingVerbClassName);
         attributes.put("OAIHandler.missingVerbClass", missingVerbClass);
         if (!"true".equals(properties.getProperty("OAIHandler.serviceUnavailable"))) {
             attributes.put("OAIHandler.version", VERSION);
-            AbstractCatalog abstractCatalog = AbstractCatalog.factory(properties, getServletContext());
+            logger.log(Level.INFO, "creating an AbstractCatalog instance by calling its factory(Properties) method");
+            AbstractCatalog abstractCatalog = 
+                    AbstractCatalog.factory(properties, getServletContext());
+            
             attributes.put("OAIHandler.catalog", abstractCatalog);
         }
+        
         boolean forceRender = false;
         if ("true".equals(properties.getProperty("OAIHandler.forceRender"))) {
             forceRender = true;
         }
+        
         String xsltName = properties.getProperty("OAIHandler.styleSheet");
         String appBase = properties.getProperty("OAIHandler.appBase");
         if (appBase == null) appBase = "webapps";
@@ -182,13 +233,20 @@ public class OAIHandler extends HttpServlet {
             StreamSource xslSource = new StreamSource(is);
             TransformerFactory tFactory = TransformerFactory.newInstance();
             Transformer transformer = tFactory.newTransformer(xslSource);
+            logger.log(Level.INFO, "setting the value of OAIHandler.transformer");
             attributes.put("OAIHandler.transformer", transformer);
         }
+        
+        logger.log(Level.INFO, "+++++++++ leaving OAIHandler#getAttributes(Properties)");
+        
         return attributes;
     }
     
     public HashMap getAttributes(String pathInfo) {
+        logger.log(Level.INFO, "+++++++++ OAIHandler#getAttributes(String) starts here");
+        
         HashMap attributes = null;
+        logger.log(Level.INFO, "pathInfo={0}", pathInfo);
         log.debug("pathInfo=" + pathInfo);
         if (pathInfo != null && pathInfo.length() > 0) {
             if (attributesMap.containsKey(pathInfo)) {
@@ -220,6 +278,8 @@ public class OAIHandler extends HttpServlet {
         if (attributes == null)
             log.debug("use global attributes");
             attributes = (HashMap) attributesMap.get("global");
+            
+        logger.log(Level.INFO, "+++++++++ leaving OAIHandler#getAttributes(String)");
         return attributes;
     }
 
@@ -235,11 +295,18 @@ public class OAIHandler extends HttpServlet {
     public void doGet(HttpServletRequest request,
             HttpServletResponse response)
     throws IOException {
+        
+        logger.log(Level.INFO, "++++++++++ OAIHandler#doGet(...) starts here ++++++++++");
+        
         HashMap attributes = getAttributes(request.getPathInfo());
         if (!filterRequest(request, response)) {
             return;
         }
-        log.debug("attributes=" + attributes);
+        
+        
+        //log.debug("attributes=" + attributes);
+        
+        
         Properties properties =
             (Properties) attributes.get("OAIHandler.properties");
         boolean monitor = false;
@@ -268,20 +335,24 @@ public class OAIHandler extends HttpServlet {
 //      }
         Date then = null;
         if (monitor) then = new Date();
-        if (debug) {
+//        if (debug) {
             Enumeration headerNames = request.getHeaderNames();
-            System.out.println("OAIHandler.doGet: ");
+            //System.out.println("OAIHandler.doGet: ");
+            logger.log(Level.INFO, "OAIHandler#doGet(): dumping the contents of headerNames:");
             while (headerNames.hasMoreElements()) {
                 String headerName = (String)headerNames.nextElement();
-                System.out.print(headerName);
-                System.out.print(": ");
-                System.out.println(request.getHeader(headerName));
+//                System.out.print(headerName);
+//                System.out.print(": ");
+//                System.out.println(request.getHeader(headerName));
+                logger.log(Level.INFO, "headerName={0}:value stored in request={1}", 
+                        new Object[]{headerName, request.getHeader(headerName)});
             }
-        }
+//        }
         if (serviceUnavailable) {
             response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE,
             "Sorry. This server is down for maintenance");
         } else {
+            logger.log(Level.INFO, "service available case");
             try {
                 String userAgent = request.getHeader("User-Agent");
                 if (userAgent == null) {
@@ -301,7 +372,10 @@ public class OAIHandler extends HttpServlet {
                         serverTransformer = transformer;
                     }
                 }
-                String result = getResult(attributes, request, response, serverTransformer, serverVerbs, extensionVerbs, extensionPath);
+                logger.log(Level.INFO, "OAIHandler#doGet(): calling getResult() as String");
+                String result = getResult(attributes, request, response, 
+                        serverTransformer, serverVerbs, extensionVerbs, 
+                        extensionPath);
 //              log.debug("result=" + result);
                 
 //              if (serverTransformer) { // render on the server
@@ -315,15 +389,17 @@ public class OAIHandler extends HttpServlet {
 //              response.setContentType("text/xml; charset=UTF-8");
 //              result = getResult(request);
 //              }
-                
+                logger.log(Level.INFO, "OAIHandler#doGet(): create writer to dump the above result");
                 Writer out = getWriter(request, response);
                 out.write(result);
                 out.close();
+                logger.log(Level.INFO, "OAIHandler#doGet(): closing the writer");
             } catch (FileNotFoundException e) {
-                if (debug) {
-                    e.printStackTrace();
-                    System.out.println("SC_NOT_FOUND: " + e.getMessage());
-                }
+                logger.log(Level.WARNING, "SC_NOT_FOUND:{0}", e.getMessage());
+//                if (debug) {
+//                    e.printStackTrace();
+//                    System.out.println("SC_NOT_FOUND: " + e.getMessage());
+//                }
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
             } catch (TransformerException e) {
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
@@ -348,6 +424,10 @@ public class OAIHandler extends HttpServlet {
                     + ((new Date()).getTime()-then.getTime()) + "ms: "
                     + reqUri.toString());
         }
+        
+        logger.log(Level.INFO, "++++++++++ OAIHandler#doGet(...) ends here ++++++++++");
+        
+        
     }
     
     /**
@@ -385,28 +465,41 @@ public class OAIHandler extends HttpServlet {
             HashMap extensionVerbs,
             String extensionPath)
     throws Throwable {
+        logger.log(Level.INFO, "++++++++++ OAIHandler#getResult(...) starts here ++++++++++");
         try {
             boolean isExtensionVerb = extensionPath.equals(request.getPathInfo());
             String verb = request.getParameter("verb");
-            if (debug) {
-                System.out.println("OAIHandler.g<etResult: verb=>" + verb + "<");
-            }
+//            if (debug) {
+//                System.out.println("OAIHandler.g<etResult: verb=>" + verb + "<");
+//            }
+            logger.log(Level.INFO, "OAIHandler.g<etResult: verb=>{0}<", verb);
+            
             String result;
             Class verbClass = null;
             if (isExtensionVerb) {
                 verbClass = (Class)extensionVerbs.get(verb);
+                logger.log(Level.INFO, "The called verb is an extension one");
             } else {
                 verbClass = (Class)serverVerbs.get(verb);
+                logger.log(Level.INFO, "The called verb is a regular one");
             }
+            
             if (verbClass == null) {
                 verbClass = (Class) attributes.get("OAIHandler.missingVerbClass");
+                logger.log(Level.INFO, "verbClass is null: using the value of OAIHandler.missingVerbClass");
+            } else {
+                logger.log(Level.INFO, "verbClass is not null");
             }
+            
+            logger.log(Level.INFO, "Creating the verb class {0} by using reflection", 
+                    verbClass.getName());
             Method construct = verbClass.getMethod("construct",
                     new Class[] {HashMap.class,
                     HttpServletRequest.class,
                     HttpServletResponse.class,
                     Transformer.class});
             try {
+                logger.log(Level.INFO, "getting back result from the invoked verb");
                 result = (String)construct.invoke(null,
                         new Object[] {attributes,
                         request,
@@ -415,13 +508,19 @@ public class OAIHandler extends HttpServlet {
             } catch (InvocationTargetException e) {
                 throw e.getTargetException();
             }
-            if (debug) {
-                System.out.println(result);
-            }
+//            if (debug) {
+//                System.out.println(result);
+//            }
+            logger.log(Level.INFO, "OAIHandler#getResult(...):result={0}", result);
+            
+        logger.log(Level.INFO, "++++++++++ leaving OAIHandler#getResult(...) ++++++++++");
+        
             return result;
         } catch (NoSuchMethodException e) {
+            logger.log(Level.WARNING, "NoSuchMethodException", e);
             throw new OAIInternalServerError(e.getMessage());
         } catch (IllegalAccessException e) {
+            logger.log(Level.WARNING, "IllegalAccessException", e);
             throw new OAIInternalServerError(e.getMessage());
         }
     }
@@ -434,11 +533,14 @@ public class OAIHandler extends HttpServlet {
      */
     public static Writer getWriter(HttpServletRequest request, HttpServletResponse response)
     throws IOException {
+        logger.log(Level.INFO, "+++++++++++ OAIHandler#getWriter(...) starts here +++++++++++");
         Writer out;
         String encodings = request.getHeader("Accept-Encoding");
-        if (debug) {
-            System.out.println("encodings=" + encodings);
-        }
+//        if (debug) {
+//            System.out.println("encodings=" + encodings);
+//        }
+        logger.log(Level.INFO, "OAIHandler#getWriter(...):encodings={0}", encodings);
+        
         if (encodings != null && encodings.indexOf("gzip") != -1) {
 //          System.out.println("using gzip encoding");
 //          log.debug("using gzip encoding");
@@ -461,6 +563,7 @@ public class OAIHandler extends HttpServlet {
 //          log.debug("using no encoding");
             out = response.getWriter();
         }
+        logger.log(Level.INFO, "+++++++++++ OAIHandler#getWriter(...) ends here +++++++++++");
         return out;
     }
     

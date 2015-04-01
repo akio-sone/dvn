@@ -76,7 +76,7 @@ public class DVNXMLRecordFactory extends RecordFactory implements java.io.Serial
     public DVNXMLRecordFactory(Properties properties)
     throws IllegalArgumentException {
     	super(properties);
-        
+        logger.log(Level.INFO, "########## DVNXMLRecordFactory#constructor is called ##########");
         logger.log(Level.INFO, "DVNXMLRecordFactory:constructor: enumerating arg properties");
         Enumeration e = properties.propertyNames();
         while (e.hasMoreElements()) {
@@ -85,6 +85,7 @@ public class DVNXMLRecordFactory extends RecordFactory implements java.io.Serial
               new Object[]{key, properties.getProperty(key)});
         }
         
+        logger.log(Level.INFO, "########## leaving DVNXMLRecordFactory#constructor ##########");
     }
 
     /**

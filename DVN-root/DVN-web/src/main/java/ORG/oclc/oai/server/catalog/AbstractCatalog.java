@@ -33,6 +33,8 @@ import ORG.oclc.oai.server.verb.NoMetadataFormatsException;
 import ORG.oclc.oai.server.verb.NoSetHierarchyException;
 import ORG.oclc.oai.server.verb.OAIInternalServerError;
 import ORG.oclc.oai.server.verb.ServerVerb;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * AbstractCatalog is the generic interface between OAICat and any arbitrary
@@ -41,7 +43,9 @@ import ORG.oclc.oai.server.verb.ServerVerb;
  * @author Jeffrey A. Young, OCLC Online Computer Library Center
  */
 public abstract class AbstractCatalog {
-    private static final boolean debug = true;
+    
+    private static final Logger logger = Logger.getLogger(AbstractCatalog.class.getName());
+//    private static final boolean debug = true;
     /**
      * The RecordFactory that understands how to convert this database's
      * native "item" to the various metadataFormats to be supported.
@@ -83,7 +87,10 @@ public abstract class AbstractCatalog {
      * return a handle to the RecordFactory
      * @return guess
      */
-    public RecordFactory getRecordFactory() { return recordFactory; }
+    public RecordFactory getRecordFactory() {
+        logger.log(Level.INFO, "AbstractCatalog#getRecordFactory() is called");
+        return recordFactory;
+    }
     
     public void setHarvestable(boolean harvestable) {
         this.harvestable = harvestable;
@@ -115,10 +122,16 @@ public abstract class AbstractCatalog {
      */
     public String toFinestFrom(String from) 
     throws BadArgumentException {
-        if (debug) {
-            System.out.println("AbstractCatalog.toFinestFrom: from=" + from);
-            System.out.println("                            target=" + VALID_GRANULARITIES[supportedGranularityOffset]);
-        }
+//        if (debug) {
+//            System.out.println("AbstractCatalog.toFinestFrom: from=" + from);
+//            System.out.println("                            target=" + VALID_GRANULARITIES[supportedGranularityOffset]);
+//        }
+        
+        
+        logger.log(Level.INFO, "AbstractCatalog.toFinestFrom: from={0}", from);
+        logger.log(Level.INFO, "target={0}", VALID_GRANULARITIES[supportedGranularityOffset]);
+        
+        
         if (from.length() > VALID_GRANULARITIES[supportedGranularityOffset].length()) {
             throw new BadArgumentException();
         }
@@ -317,7 +330,11 @@ public abstract class AbstractCatalog {
      * @return the Crosswalks object containing a detailed list of oai
      * formats supported by this application.
      */
-    public Crosswalks getCrosswalks() { return recordFactory.getCrosswalks(); }
+    public Crosswalks getCrosswalks() {
+        logger.log(Level.INFO, "AbstractCatalog#getCrosswalks() is called");
+        logger.log(Level.INFO, "crosswalks to be given by recordFactory.getCrosswalks()");
+        return recordFactory.getCrosswalks();
+    }
     
     /**
      * Retrieve the list of supported Sets. This should probably be initialized
@@ -361,11 +378,22 @@ public abstract class AbstractCatalog {
     public static AbstractCatalog factory(Properties properties,
             ServletContext context)
     throws Throwable {
+        logger.log(Level.INFO, "========== AbstractCatalog#factory(...) starts here ==========");
         AbstractCatalog oaiCatalog = null;
         String oaiCatalogClassName =
             properties.getProperty("AbstractCatalog.oaiCatalogClassName");
+        
+        logger.log(Level.INFO, "value of AbstractCatalog.oaiCatalogClassName={0}", 
+                oaiCatalogClassName);
+        
+        
         String recordFactoryClassName =
             properties.getProperty("AbstractCatalog.recordFactoryClassName");
+        
+        logger.log(Level.INFO, "value of AbstractCatalog.recordFactoryClassName={0}", 
+                recordFactoryClassName);
+        
+        
         if (oaiCatalogClassName == null) {
             throw new ClassNotFoundException(
             "AbstractCatalog.oaiCatalogClassName is missing from properties file");
@@ -374,7 +402,10 @@ public abstract class AbstractCatalog {
             throw new ClassNotFoundException(
             "AbstractCatalog.recordFactoryClassName is missing from properties file");
         }
+        
+        
         Class oaiCatalogClass = Class.forName(oaiCatalogClassName);
+        
         try {
             Constructor oaiCatalogConstructor = null;
             try {
@@ -391,28 +422,46 @@ public abstract class AbstractCatalog {
                     (AbstractCatalog)oaiCatalogConstructor.newInstance(new Object[]
                                                                                   {properties});
             }
-            if (debug) {
-                System.out.println("AbstractCatalog.factory: recordFactoryClassName="
-                        + recordFactoryClassName);
-            }
+//            if (debug) {
+//                System.out.println("AbstractCatalog.factory: recordFactoryClassName="
+//                        + recordFactoryClassName);
+//            }
+            
+            logger.log(Level.INFO, "recordFactoryClassName={0}", 
+                    recordFactoryClassName);
+            
+            
+            
             Class recordFactoryClass = Class.forName(recordFactoryClassName);
             Constructor recordFactoryConstructor =
                 recordFactoryClass.getConstructor(new Class[] {Properties.class});
             oaiCatalog.recordFactory =
                 (RecordFactory)recordFactoryConstructor.newInstance(new Object[] {properties});
-            if (debug) {
-                System.out.println("AbstractCatalog.factory: recordFactory=" + oaiCatalog.recordFactory);
-            }
+//            if (debug) {
+//                System.out.println("AbstractCatalog.factory: recordFactory=" + oaiCatalog.recordFactory);
+//            }
+            
+            logger.log(Level.INFO, "oaiCatalog.recordFactory.getClass().getName()={0}",
+                     oaiCatalog.recordFactory.getClass().getName());
+            
+            
             String harvestable = properties.getProperty("AbstractCatalog.harvestable");
+            logger.log(Level.INFO, "harvestable={0}", harvestable);
+            
             if (harvestable != null && harvestable.equals("false")) {
                 oaiCatalog.harvestable = false;
             }
+            
             String secondsToLive =
                 properties.getProperty("AbstractCatalog.secondsToLive");
             if (secondsToLive != null) {
                 oaiCatalog.millisecondsToLive = Integer.parseInt(secondsToLive) * 1000;
             }
+            
             String granularity = properties.getProperty("AbstractCatalog.granularity");
+            
+            logger.log(Level.INFO, "key:AbstractCatalog.granularity=value:{0}", granularity);
+            
             for (int i = 0; granularity != null && i < VALID_GRANULARITIES.length; ++i) {
                 if (granularity.equalsIgnoreCase(VALID_GRANULARITIES[i])) {
                     oaiCatalog.supportedGranularityOffset = i;
@@ -421,12 +470,15 @@ public abstract class AbstractCatalog {
             }
             if (oaiCatalog.supportedGranularityOffset == -1) {
                 oaiCatalog.supportedGranularityOffset = 0;
-                System.err.println("AbstractCatalog.factory: Invalid or missing AbstractCatalog.granularity property. Setting value to default: " +
+//                System.err.println("AbstractCatalog.factory: Invalid or missing AbstractCatalog.granularity property. Setting value to default: " +
+//                        VALID_GRANULARITIES[oaiCatalog.supportedGranularityOffset]);
+                logger.log(Level.INFO, "AbstractCatalog#factory(...): Invalid or missing AbstractCatalog.granularity property. Setting value to default:{0}",
                         VALID_GRANULARITIES[oaiCatalog.supportedGranularityOffset]);
             }
         } catch (InvocationTargetException e) {
             throw e.getTargetException();
         }
+        logger.log(Level.INFO, "========== leaving AbstractCatalog#factory(...) with oaiCatalog ==========");
         return oaiCatalog;
     }
     
@@ -539,9 +591,15 @@ public abstract class AbstractCatalog {
     public Map listRecords(String from, String until, String set, String metadataPrefix)
     throws BadArgumentException, CannotDisseminateFormatException, NoItemsMatchException,
     NoSetHierarchyException, OAIInternalServerError {
-        if (debug) {
-            System.out.println("in AbstractCatalog.listRecords");
-        }
+//        if (debug) {
+//            System.out.println("in AbstractCatalog.listRecords");
+//        }
+        
+        logger.log(Level.INFO, "========== AbstractCatalog#listRecords(...) starts here ==========");
+        
+        
+        
+        
         Map listIdentifiersMap = listIdentifiers(from, until, set, metadataPrefix);
         String resumptionToken = (String)listIdentifiersMap.get("resumptionToken");
         Iterator identifiers = (Iterator)listIdentifiersMap.get("identifiers");
@@ -560,8 +618,12 @@ public abstract class AbstractCatalog {
         }
         listRecordsMap.put("records", records.iterator());
         if (resumptionToken != null) {
+            logger.log(Level.INFO, "resumptionToken is not null: add the resumptionToken key");
             listRecordsMap.put("resumptionToken", resumptionToken);
+        } else {
+            logger.log(Level.INFO, "resumptionToken is null:{0}", resumptionToken);
         }
+        logger.log(Level.INFO, "========== AbstractCatalog#listRecords(...) ends here ==========");
         return listRecordsMap;
     }
     
@@ -578,6 +640,10 @@ public abstract class AbstractCatalog {
      */
     public Map listRecords(String resumptionToken)
     throws BadResumptionTokenException, OAIInternalServerError {
+        
+        logger.log(Level.INFO, "========== AbstractCatalog#listRecords(resumptionToken) starts here ==========");
+        
+        
         Map listIdentifiersMap = listIdentifiers(resumptionToken);
         resumptionToken = (String)listIdentifiersMap.get("resumptionToken");
         Iterator identifiers = (Iterator)listIdentifiersMap.get("identifiers");
@@ -600,8 +666,14 @@ public abstract class AbstractCatalog {
         }
         listRecordsMap.put("records", records.iterator());
         if (resumptionToken != null) {
+            logger.log(Level.INFO, "resumptionToken is not null: add the resumptionToken key");
             listRecordsMap.put("resumptionToken", resumptionToken);
+        } else {
+            logger.log(Level.INFO, "resumptionToken is null:{0}", resumptionToken);            
         }
+        
+        logger.log(Level.INFO, "========== AbstractCatalog#listRecords(resumptionToken) ends here ==========");
+        
         return listRecordsMap;
     }
     

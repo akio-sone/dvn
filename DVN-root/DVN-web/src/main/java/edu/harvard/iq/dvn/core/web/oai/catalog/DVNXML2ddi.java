@@ -69,7 +69,7 @@ public class DVNXML2ddi extends Crosswalk implements java.io.Serializable  {
     public DVNXML2ddi(Properties properties) {
 //	super("http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd");
         super("http://www.icpsr.umich.edu/DDI http://www.icpsr.umich.edu/DDI/Version2-0.xsd");
-        
+        logger.log(Level.INFO, "########## DVNXML2ddi#constructor is called ##########");
         logger.log(Level.INFO, "DVNXML2ddi:constructor: enumerating arg properties");
         Enumeration e = properties.propertyNames();
         while (e.hasMoreElements()) {
@@ -77,6 +77,9 @@ public class DVNXML2ddi extends Crosswalk implements java.io.Serializable  {
           logger.log(Level.INFO, "key[{0}]=value[{1}]", 
               new Object[]{key, properties.getProperty(key)});
         }
+        
+        logger.log(Level.INFO, "########## DVNXML2ddi#constructor ends here ##########");
+        
     }
 
     /**
@@ -102,17 +105,19 @@ public class DVNXML2ddi extends Crosswalk implements java.io.Serializable  {
      * @exception CannotDisseminateFormatException nativeItem doesn't support this format.
      */
     public String createMetadata(Object nativeItem)
-	throws CannotDisseminateFormatException {
-	String fullItem = (String)nativeItem;
+            throws CannotDisseminateFormatException {
+        logger.log(Level.INFO, "########## DVNXML2ddi#createMetadata(...) starts here ##########");
+        String fullItem = (String) nativeItem;
 //        Document fullItem = (Document) nativeItem;
 
-        
-	int startOffset = fullItem.indexOf(elementStart);
-	if (startOffset == -1) {
-	    throw new CannotDisseminateFormatException(getSchemaLocation());
-	}
-	int endOffset = fullItem.indexOf(elementEnd) + elementEnd.length();
-	return fullItem.substring(startOffset, endOffset);
-         
+        int startOffset = fullItem.indexOf(elementStart);
+        if (startOffset == -1) {
+            throw new CannotDisseminateFormatException(getSchemaLocation());
+        }
+        int endOffset = fullItem.indexOf(elementEnd) + elementEnd.length();
+
+        logger.log(Level.INFO, "########## leaving DVNXML2ddi#createMetadata(...) ##########");
+        return fullItem.substring(startOffset, endOffset);
+
     }
 }

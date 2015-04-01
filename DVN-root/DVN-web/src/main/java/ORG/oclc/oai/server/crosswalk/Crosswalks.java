@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Crosswalks manages all the Crosswalk objects this
@@ -26,7 +28,8 @@ import java.util.StringTokenizer;
  * @author Jeffrey A. Young
  */
 public class Crosswalks {
-    private static final boolean debug = true;
+//    private static final boolean debug = true;
+    private static final Logger logger = Logger.getLogger(Crosswalks.class.getName());
 
     // map of metadataPrefix/CrosswalkItem
     private Map crosswalksMap = new HashMap();
@@ -38,51 +41,81 @@ public class Crosswalks {
      * @param properties a properties object containing Crosswalks entries
      */
     public Crosswalks(Properties properties) {
+        logger.log(Level.INFO, "========== Crosswalks#constructor(Properties) starts here ==========");
+
         String propertyPrefix = "Crosswalks.";
         Enumeration propNames = properties.propertyNames();
         while (propNames.hasMoreElements()) {
-            String propertyName = (String)propNames.nextElement();
+            String propertyName = (String) propNames.nextElement();
+            
+            logger.log(Level.INFO, "propertyName={0}", propertyName);
+            
             if (propertyName.startsWith(propertyPrefix)) {
+                
                 String schemaLabel = propertyName.substring(propertyPrefix.length());
-		String formatClassName = (String)properties.get(propertyName);
-		try {
-		    Class crosswalkClass = Class.forName(formatClassName);
-		    Crosswalk crosswalk = null;
-		    try {
-			Constructor crosswalkConstructor = crosswalkClass.getConstructor(new Class[] {String.class, Properties.class});
-			crosswalk = (Crosswalk)crosswalkConstructor.newInstance(new Object[] {schemaLabel, properties});
-		    } catch (NoSuchMethodException e) {
-			Constructor crosswalkConstructor = crosswalkClass.getConstructor(new Class[] {Properties.class});
-			crosswalk = (Crosswalk)crosswalkConstructor.newInstance(new Object[] {properties});
-		    }
-		    CrosswalkItem crosswalkItem = new CrosswalkItem(schemaLabel, crosswalk.getSchemaURL(), crosswalk.getNamespaceURL(), crosswalk);
-		    crosswalksMap.put(schemaLabel, crosswalkItem);
-                    if (debug) {
-                        System.out.println("Crosswalks.Crosswalks: " + schemaLabel + "=" + crosswalk);
+                logger.log(Level.INFO, "schemaLabel={0}", schemaLabel);
+
+                String formatClassName = (String) properties.get(propertyName);
+                logger.log(Level.INFO, "formatClassName={0}", formatClassName);
+                
+                try {
+                    Class crosswalkClass = Class.forName(formatClassName);
+                    Crosswalk crosswalk = null;
+                    try {
+                        Constructor crosswalkConstructor = 
+                                crosswalkClass.getConstructor(new Class[]{String.class, Properties.class});
+                        crosswalk = 
+                                (Crosswalk) crosswalkConstructor.newInstance(new Object[]{schemaLabel, properties});
+                    } catch (NoSuchMethodException e) {
+                        Constructor crosswalkConstructor = crosswalkClass.getConstructor(new Class[]{Properties.class});
+                        crosswalk = 
+                                (Crosswalk) crosswalkConstructor.newInstance(new Object[]{properties});
                     }
-		} catch (Exception e) {
-		    System.err.println("Crosswalks: couldn't construct: " + formatClassName);
-		    e.printStackTrace();
-		}
+                    CrosswalkItem crosswalkItem = new CrosswalkItem(schemaLabel, crosswalk.getSchemaURL(), crosswalk.getNamespaceURL(), crosswalk);
+                    crosswalksMap.put(schemaLabel, crosswalkItem);
+//                    if (debug) {
+//                        System.out.println("Crosswalks.Crosswalks: " + schemaLabel + "=" + crosswalk);
+//                    }
+                    logger.log(Level.INFO, "Crosswalks#Crosswalks: schemaLabel={0} :crosswalk={1}",
+                            new Object[]{schemaLabel, crosswalk});
+                } catch (Exception e) {
+//                    System.err.println("Crosswalks: couldn't construct: " + formatClassName);
+                    logger.log(Level.SEVERE, "Crosswalks: couldn't construct:{0}", formatClassName);
+                    e.printStackTrace();
+                }
             }
         }
         if (crosswalksMap.size() == 0) {
-            System.err.println("Crosswalks entries are missing from properties file");
+            //System.err.println("Crosswalks entries are missing from properties file");
+            logger.log(Level.SEVERE, "Crosswalks entries are missing from properties file");
+        } else {
+            logger.log(Level.INFO, "crosswalksMap.size()={0}", crosswalksMap.size());
         }
+
+        logger.log(Level.INFO, "========== Crosswalks#constructor(Properties) ends here ==========");
     }
 
     public Crosswalks(Map crosswalkItemMap) {
+        logger.log(Level.INFO, "========== Crosswalks#constructor(Map) starts here ==========");
+        
 	Iterator iter = crosswalkItemMap.values().iterator();
 	while (iter.hasNext()) {
 	    CrosswalkItem crosswalkItem = (CrosswalkItem)iter.next();
 	    String schemaLabel = crosswalkItem.getMetadataPrefix();
+        logger.log(Level.INFO, "schemaLabel={0}", schemaLabel);
 // 	    Crosswalk crosswalk = crosswalkItem.getCrosswalk();
 	    crosswalksMap.put(schemaLabel, crosswalkItem);
 	}
 	
 	if (crosswalksMap.size() == 0) {
-            System.err.println("Crosswalks entries are missing from properties file");
-	}
+            //System.err.println("Crosswalks entries are missing from properties file");
+        logger.log(Level.SEVERE, "Crosswalks entries are missing from properties file");
+	} else {
+        logger.log(Level.INFO, "crosswalksMap.size()={0}", crosswalksMap.size());
+    }
+    
+        logger.log(Level.INFO, "========== Crosswalks#constructor(Map) ends here ==========");
+    
     }
 
     public String toString() {

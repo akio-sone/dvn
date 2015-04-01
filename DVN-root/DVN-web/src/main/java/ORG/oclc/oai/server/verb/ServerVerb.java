@@ -34,6 +34,8 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import ORG.oclc.oai.util.OAIUtil;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 //import javax.servlet.http.HttpUtils;
 
 /**
@@ -42,7 +44,9 @@ import ORG.oclc.oai.util.OAIUtil;
  * @author Jefffrey A. Young, OCLC Online Computer Library Center
  */
 public abstract class ServerVerb {
-    private static final boolean debug = true;
+    
+    private static final Logger logger = Logger.getLogger(ServerVerb.class.getName());
+//    private static final boolean debug = true;
 
     private int statusCode = HttpServletResponse.SC_OK; // http status
     private String message = null; // http response message
@@ -65,9 +69,10 @@ public abstract class ServerVerb {
      * @param xmlText complete XML response string
      */
     protected void init(String xmlText) {
-        if (debug) {
-            System.out.println("ServerVerb.init: xmlText=" + xmlText);
-        }
+//        if (debug) {
+//            System.out.println("ServerVerb.init: xmlText=" + xmlText);
+//        }
+        logger.log(Level.INFO, "ServerVerb.init: xmlText={0}", xmlText);
         this.xmlText = xmlText;
     }
 
@@ -265,10 +270,14 @@ public abstract class ServerVerb {
             if (propertyName.startsWith(propertyPrefix)) {
                 String verb = propertyName.substring(propertyPrefix.length());
                 String verbClassName = (String)properties.get(propertyName);
-                if (debug) {
-                    System.out.println("ExtensionVerb.getVerbs: verb=" + verb);
-                    System.out.println("ExtensionVerb.verbClassName=" + verbClassName);
-                }
+//                if (debug) {
+//                    System.out.println("ExtensionVerb.getVerbs: verb=" + verb);
+//                    System.out.println("ExtensionVerb.verbClassName=" + verbClassName);
+//                }
+                logger.log(Level.INFO, "ExtensionVerb.getVerbs: verb={0}", verb);
+                logger.log(Level.INFO, "ExtensionVerb.verbClassName={0}", verbClassName);
+                
+                
                 try {
                     Class serverVerbClass = Class.forName(verbClassName);
                     Method init =
@@ -280,9 +289,11 @@ public abstract class ServerVerb {
                         throw e.getTargetException();
                     }
                     extensionVerbsMap.put(verb, serverVerbClass);
-                    if (debug) {
-                        System.out.println("ExtensionVerb.getVerbs: " + verb + "=" + verbClassName);
-                    }
+//                    if (debug) {
+//                        System.out.println("ExtensionVerb.getVerbs: " + verb + "=" + verbClassName);
+//                    }
+                    logger.log(Level.INFO, "ExtensionVerb.getVerbs: {0}={1}", 
+                            new Object[]{verb, verbClassName});
                 } catch (Throwable e) {
                     System.err.println("ExtensionVerb: couldn't construct: " + verbClassName);
                     e.printStackTrace();

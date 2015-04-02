@@ -44,6 +44,8 @@ import ORG.oclc.oai.server.catalog.AbstractCatalog;
 import ORG.oclc.oai.server.verb.BadVerb;
 import ORG.oclc.oai.server.verb.OAIInternalServerError;
 import ORG.oclc.oai.server.verb.ServerVerb;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -63,6 +65,9 @@ public class OAIHandler extends HttpServlet {
     private static final String VERSION = "1.5.56";
 //    private static boolean debug = true;
     private static final Logger logger = Logger.getLogger(OAIHandler.class.getName());
+    
+    private XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
+
 
 //    private Transformer transformer = null;
 //    private boolean serviceUnavailable = false;
@@ -146,8 +151,12 @@ public class OAIHandler extends HttpServlet {
                     properties.load(in);
                     
                     logger.log(Level.INFO, "calling OAIHandler#getAttributes(Properties) to add more data");
+//                    logger.log(Level.INFO, "OAIHandler#init(): properties before getAttributes():\n{0}", 
+//                            xstream.toXML(properties));
                     attributes = getAttributes(properties);
                     
+//                    logger.log(Level.INFO, "OAIHandler#init(): attributes after getAttributes():\n{0}", 
+//                            xstream.toXML(attributes));
                     // if (debug) System.out.println("OAIHandler.init: fileName=" + fileName);
 
                 }
@@ -155,10 +164,12 @@ public class OAIHandler extends HttpServlet {
                 log.debug("Load context properties");
                 attributes = getAttributes(properties);
             }
+            
             logger.log(Level.INFO, "store the modified properties=attributes as the value of global in attributesMap");
             log.debug("Store global properties");
             attributesMap.put("global", attributes);
-            
+//            logger.log(Level.INFO, "OAIHandler#init(): attributesMap:\n{0}", 
+//                            xstream.toXML(attributesMap));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             throw new ServletException(e.getMessage());
@@ -237,6 +248,9 @@ public class OAIHandler extends HttpServlet {
             attributes.put("OAIHandler.transformer", transformer);
         }
         
+//        logger.log(Level.INFO, "OAIHandler#getAttributes(Properties): attributes:\n{0}", 
+//                            xstream.toXML(attributes));
+        
         logger.log(Level.INFO, "+++++++++ leaving OAIHandler#getAttributes(Properties)");
         
         return attributes;
@@ -244,9 +258,9 @@ public class OAIHandler extends HttpServlet {
     
     public HashMap getAttributes(String pathInfo) {
         logger.log(Level.INFO, "+++++++++ OAIHandler#getAttributes(String) starts here");
-        
+
         HashMap attributes = null;
-        logger.log(Level.INFO, "pathInfo={0}", pathInfo);
+        logger.log(Level.INFO, "OAIHandler#getAttributes(String):pathInfo={0}", pathInfo);
         log.debug("pathInfo=" + pathInfo);
         if (pathInfo != null && pathInfo.length() > 0) {
             if (attributesMap.containsKey(pathInfo)) {
@@ -258,8 +272,8 @@ public class OAIHandler extends HttpServlet {
                     String fileName = pathInfo.substring(1) + ".properties";
                     log.debug("attempting load of " + fileName);
                     InputStream in = Thread.currentThread()
-                    .getContextClassLoader()
-                    .getResourceAsStream(fileName);
+                            .getContextClassLoader()
+                            .getResourceAsStream(fileName);
                     if (in != null) {
                         log.debug("file found");
                         Properties properties = new Properties();
@@ -274,12 +288,20 @@ public class OAIHandler extends HttpServlet {
                     // do nothing
                 }
             }
+        } else {
+            logger.log(Level.INFO, "OAIHandler#getAttributes(String): no path-based processing");
         }
-        if (attributes == null)
-            log.debug("use global attributes");
+        if (attributes == null) {
+//            log.debug("use global attributes");
+            logger.log(Level.INFO, "OAIHandler#getAttributes(String): no addition in this method: using the global attributes file instead");
             attributes = (HashMap) attributesMap.get("global");
-            
+        }
+        
+//        logger.log(Level.INFO, "OAIHandler#getAttributes(String): attributes:\n{0}",
+//                xstream.toXML(attributes));
+
         logger.log(Level.INFO, "+++++++++ leaving OAIHandler#getAttributes(String)");
+
         return attributes;
     }
 
@@ -309,14 +331,22 @@ public class OAIHandler extends HttpServlet {
         
         Properties properties =
             (Properties) attributes.get("OAIHandler.properties");
+        
+        logger.log(Level.INFO, "OAIHandler#doGet(): properties:\n{0}",
+                properties);
+        
         boolean monitor = false;
         if (properties.getProperty("OAIHandler.monitor") != null) {
             monitor = true;
         }
         boolean serviceUnavailable = isServiceUnavailable(properties);
-        String extensionPath = properties.getProperty("OAIHandler.extensionPath", "/extension");
         
+        String extensionPath = properties.getProperty("OAIHandler.extensionPath", "/extension");
+        // note: the following argument properties has no role in the called metod
+        // getVerbs() should be no argument method
         HashMap serverVerbs = ServerVerb.getVerbs(properties);
+        
+        // the following getExtensionVerbs() uses properties
         HashMap extensionVerbs = ServerVerb.getExtensionVerbs(properties);
         
         Transformer transformer =
@@ -372,7 +402,24 @@ public class OAIHandler extends HttpServlet {
                         serverTransformer = transformer;
                     }
                 }
+                
+                
+        logger.log(Level.INFO, "OAIHandler#doGet(): attributes:\n{0}",
+                attributes);
+        logger.log(Level.INFO, "OAIHandler#doGet(): request:\n{0}",
+                request);
+        logger.log(Level.INFO, "OAIHandler#doGet(): response:\n{0}",
+                response);
+
+        
+                
+                
+                
                 logger.log(Level.INFO, "OAIHandler#doGet(): calling getResult() as String");
+                
+                
+                
+                
                 String result = getResult(attributes, request, response, 
                         serverTransformer, serverVerbs, extensionVerbs, 
                         extensionPath);
@@ -389,7 +436,8 @@ public class OAIHandler extends HttpServlet {
 //              response.setContentType("text/xml; charset=UTF-8");
 //              result = getResult(request);
 //              }
-                logger.log(Level.INFO, "OAIHandler#doGet(): create writer to dump the above result");
+                logger.log(Level.INFO, 
+                        "OAIHandler#doGet(): create writer to dump the above result");
                 Writer out = getWriter(request, response);
                 out.write(result);
                 out.close();
@@ -491,20 +539,38 @@ public class OAIHandler extends HttpServlet {
                 logger.log(Level.INFO, "verbClass is not null");
             }
             
-            logger.log(Level.INFO, "Creating the verb class {0} by using reflection", 
+            logger.log(Level.INFO, "Creating 'construct' method of the verb class {0} by using reflection", 
                     verbClass.getName());
+            // verbClass => ListRecords, etc.
+            // "construct" => method name in ListRecord, etc. and it must be static
+            // The above method "construct" takes 4 arguments as specified in 
+            // new Class[] array, e.g., ListRecords case
+            // 
+            // public static String construct(HashMap context,
+            // HttpServletRequest request, HttpServletResponse response,
+            // Transformer serverTransformer)
+            // throws OAIInternalServerError, TransformerException {
             Method construct = verbClass.getMethod("construct",
-                    new Class[] {HashMap.class,
-                    HttpServletRequest.class,
-                    HttpServletResponse.class,
-                    Transformer.class});
+                    new Class[] {
+                        HashMap.class,
+                        HttpServletRequest.class,
+                        HttpServletResponse.class,
+                        Transformer.class}
+            );
+            
             try {
-                logger.log(Level.INFO, "getting back result from the invoked verb");
+                logger.log(Level.INFO, "invoking the above construct method with actual arguments and getting result from it");
+                // since the construct method is static,
+                // the first argument of invoke() must be null
+                // 
                 result = (String)construct.invoke(null,
-                        new Object[] {attributes,
-                        request,
-                        response,
-                        serverTransformer});
+                        new Object[] {
+                                        attributes,
+                                        request,
+                                        response,
+                                        serverTransformer
+                                    }
+                );
             } catch (InvocationTargetException e) {
                 throw e.getTargetException();
             }

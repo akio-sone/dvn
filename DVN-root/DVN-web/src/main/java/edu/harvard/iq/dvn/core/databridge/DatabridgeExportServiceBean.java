@@ -8,6 +8,8 @@ package edu.harvard.iq.dvn.core.databridge;
 import ORG.oclc.oai.server.catalog.AbstractCatalog;
 import ORG.oclc.oai.server.verb.OAIInternalServerError;
 import ORG.oclc.oai.server.verb.ServerVerb;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -34,7 +36,7 @@ public class DatabridgeExportServiceBean {
 
     private static final Logger logger
         = Logger.getLogger(DatabridgeExportServiceBean.class.getName());
-
+    private XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
 //    String outFileName="databridge-export";
 //    String metadataPrefix="ddi";
     String oaicatPropertiesFilename = "oaicat.properties";
@@ -89,7 +91,7 @@ public class DatabridgeExportServiceBean {
 //                    in = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
 //                }
 
-            if (in != null) {
+//            if (in != null) {
                 logger.log(Level.INFO, "properties file was found: Load the properties");
                 logger.log(Level.WARNING, "file was found: Load the properties");
 
@@ -97,18 +99,29 @@ public class DatabridgeExportServiceBean {
 
                 properties.load(in);
 
-                logger.log(Level.INFO, "calling OAIHandler#getAttributes(Properties) to add more data");
+                logger.log(Level.INFO, "calling DatabridgeExportServiceBean#getAttributes(Properties) to add more data");
+                
+                
+                logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): properties before getAttributes():\n{0}", 
+                            xstream.toXML(properties));
                 attributes = getAttributes(properties);
 
+                    logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): attributes after getAttributes():\n{0}", 
+                            xstream.toXML(attributes));
+                
                     // if (debug) System.out.println("OAIHandler.init: fileName=" + fileName);
-            }
 //            } else {
 //                log.debug("Load context properties");
 //                attributes = getAttributes(properties);
 //            }
             logger.log(Level.INFO, "store the modified properties=attributes as the value of global in attributesMap");
             logger.log(Level.INFO, "Store global properties");
+            
             attributesMap.put("global", attributes);
+            
+            logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): attributesMap:\n{0}", 
+                            xstream.toXML(attributesMap));
+            
 
         } catch (FileNotFoundException e) {
 
@@ -118,7 +131,7 @@ public class DatabridgeExportServiceBean {
             logger.log(Level.SEVERE, "IOException", ex);
         }
         
-        logger.log(Level.INFO, "+++++++++ OAIHandler#init() ends here");
+        logger.log(Level.INFO, "+++++++++ DatabridgeExportServiceBean#init() ends here");
 
 //        if (absPathToDatafile == null) {
 //            absPathToDatafile=System.getProperty("jhove.conf.dir");
@@ -162,11 +175,15 @@ public class DatabridgeExportServiceBean {
             logger.log(Level.INFO, "setting the value of OAIHandler.missingVerbClass");
             
             Class missingVerbClass = Class.forName(missingVerbClassName);
+            
             attributes.put("OAIHandler.missingVerbClass", missingVerbClass);
+            
             if (!"true".equals(properties.getProperty("OAIHandler.serviceUnavailable"))) {
                 attributes.put("OAIHandler.version", VERSION);
-                logger.log(Level.INFO, "creating an AbstractCatalog instance by calling its factory(Properties) method");
+                logger.log(Level.INFO, 
+                        "creating an AbstractCatalog instance by calling its factory(Properties) method");
                 ServletContext context = null;
+                
                 AbstractCatalog abstractCatalog
                     = AbstractCatalog.factory(properties, context);
                 
@@ -216,6 +233,7 @@ public class DatabridgeExportServiceBean {
         
         logger.log(Level.INFO, "++++++++++ OAIHandler#doGet(...) starts here ++++++++++");
         
+//        the follow line in the original is irrelevant        
 //        HashMap attributes = getAttributes(request.getPathInfo());
 //        if (!filterRequest(request, response)) {
 //            return;
@@ -226,6 +244,11 @@ public class DatabridgeExportServiceBean {
         
         
         Properties properties = (Properties)((HashMap)attributesMap.get("OAIHandler.properties")).get("OAIHandler.properties");
+        
+        logger.log(Level.INFO, "DatabridgeExportServiceBean#doGet(): properties:\n{0}", 
+                            xstream.toXML(properties));
+        
+        
         //    (Properties) attributes.get("OAIHandler.properties");
         boolean monitor = false;
 //        if (properties.getProperty("OAIHandler.monitor") != null) {
@@ -335,8 +358,8 @@ public class DatabridgeExportServiceBean {
 //                    + ((new Date()).getTime()-then.getTime()) + "ms: "
 //                    + reqUri.toString());
 //        }
-        
-        logger.log(Level.INFO, "++++++++++ #doGet(...) ends here ++++++++++");
+        logger.log(Level.INFO, "DatabridgeExportServiceBean#doGet(): result:\n{0}", result);
+        logger.log(Level.INFO, "++++++++++ DatabridgeExportServiceBean#doGet(...) ends here ++++++++++");
         
         
     }
@@ -349,7 +372,7 @@ public class DatabridgeExportServiceBean {
             HashMap extensionVerbs,
             String extensionPath)
     throws Throwable {
-        logger.log(Level.INFO, "++++++++++ OAIHandler#getResult(...) starts here ++++++++++");
+        logger.log(Level.INFO, "++++++++++ DatabridgeExportServiceBean#getResult(...) starts here ++++++++++");
         try {
             //boolean isExtensionVerb = extensionPath.equals(request.getPathInfo());
             String verb = "ListRecords";//request.getParameter("verb");
@@ -395,9 +418,9 @@ public class DatabridgeExportServiceBean {
 //            if (debug) {
 //                System.out.println(result);
 //            }
-            logger.log(Level.INFO, "OAIHandler#getResult(...):result={0}", result);
+            logger.log(Level.INFO, "DatabridgeExportServiceBean#getResult(...):result={0}", result);
             
-        logger.log(Level.INFO, "++++++++++ leaving OAIHandler#getResult(...) ++++++++++");
+        logger.log(Level.INFO, "++++++++++ leaving DatabridgeExportServiceBean#getResult(...) ++++++++++");
         
             return result;
         } catch (NoSuchMethodException e) {

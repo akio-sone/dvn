@@ -665,7 +665,7 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
         listRecordsMap.put("records", records.iterator());
         logger.log(Level.INFO, "listRecordsMap.size={0}", listRecordsMap.size());
         
-        logger.log(Level.INFO, "listRecordsMap={0}", xstream.toXML(listRecordsMap));
+//        logger.log(Level.INFO, "listRecordsMap={0}", xstream.toXML(listRecordsMap));
         logger.log(Level.INFO, "+++++++++++++ leaving DVNOAICatalog#listRecords(...) +++++++++++++");
         return listRecordsMap;
     }

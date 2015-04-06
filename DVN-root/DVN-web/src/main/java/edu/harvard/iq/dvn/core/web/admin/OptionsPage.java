@@ -10,6 +10,7 @@ import com.icesoft.faces.component.paneltabset.PanelTabSet;
 import com.icesoft.faces.context.Resource;
 import com.icesoft.faces.context.effects.JavascriptContext;
 import edu.harvard.iq.dvn.core.admin.*;
+import edu.harvard.iq.dvn.core.databridge.DatabridgeExportServiceBean;
 import edu.harvard.iq.dvn.core.gnrs.GNRSServiceLocal;
 import edu.harvard.iq.dvn.core.harvest.HarvestFormatType;
 import edu.harvard.iq.dvn.core.harvest.HarvestStudyServiceLocal;
@@ -119,6 +120,14 @@ public class OptionsPage extends VDCBaseBean  implements java.io.Serializable {
     @EJB HarvestStudyServiceLocal harvestStudyService;
     @EJB GNRSServiceLocal gnrsService;
     @EJB DOIEZIdServiceLocal doiEZIdServiceLocal;
+    
+    
+    @EJB DatabridgeExportServiceBean databridgeExportServiceBean;
+    
+    
+    
+    
+    
     @Inject EditNetworkNamePage editNetworkNamePage;
     @Inject EditNetworkAnnouncementsPage editNetworkAnnouncementsPage;
     @Inject EditBannerFooterPage editBannerFooterPage;
@@ -3646,8 +3655,9 @@ public class OptionsPage extends VDCBaseBean  implements java.io.Serializable {
         
         try {
             //harvestStudyService.updateHarvestStudies();
-            logger.log(Level.INFO, "dispatching the request OAI set({0}): to be implemented soon", exportOAIspec);
-            
+//            logger.log(Level.INFO, "dispatching the request OAI set({0}): to be implemented soon", exportOAIspec);
+            logger.log(Level.INFO, "calling DatabridgeExportServiceBean#renderRecords()");
+            databridgeExportServiceBean.renderRecords(exportOAIspec);
             
             addMessage( "exportMessage:databridge", "sending the OAI set succeeded.");
         } catch (Exception e) {

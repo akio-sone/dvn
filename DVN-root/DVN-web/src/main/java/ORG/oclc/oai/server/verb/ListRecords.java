@@ -40,6 +40,9 @@ public class ListRecords extends ServerVerb {
 
     //private static final boolean debug = true;
     private static ArrayList validParamNames1 = new ArrayList();
+    
+    
+
 
     static {
         validParamNames1.add("verb");
@@ -322,9 +325,8 @@ public class ListRecords extends ServerVerb {
             return render(response, "text/xml; charset=UTF-8", sb.toString(), serverTransformer);
         }
     }
-
     
-    public static String construct(HashMap attributes, String setName)
+    public static String construct(Map attributes, Map requestMap, String baseURL)
         throws OAIInternalServerError, TransformerException {
         //if (debug) System.out.println("ListRecords.construct: entered");
         // context:
@@ -360,7 +362,7 @@ public class ListRecords extends ServerVerb {
         boolean urlEncodeSetSpec
             = !"false".equalsIgnoreCase(properties.getProperty("OAIHandler.urlEncodeSetSpec"));
 
-        String baseURL = properties.getProperty("OAIHandler.baseURL");
+//        String baseURL = properties.getProperty("OAIHandler.baseURL");
 
 //        if (baseURL == null) {
 //            try {
@@ -384,6 +386,14 @@ public class ListRecords extends ServerVerb {
         if (metadataPrefix != null && metadataPrefix.length() == 0) {
             metadataPrefix = null;
         }
+
+    /*
+        Here requestMap has the following entries
+        requestMap.put("verb", "ListRecords");
+        requestMap.put("metadataPrefix", "ddi");
+        requestMap.put("set", "${requested_OAI_set}");
+        
+    */
 
         logger.log(Level.INFO, "metadataPrefix={0}", metadataPrefix);
 
@@ -417,17 +427,6 @@ public class ListRecords extends ServerVerb {
             sb.append("</request>");
             sb.append("<error code=\"badArgument\">Database is unavailable for harvesting</error>");
         } else {
-// 	    if (debug) {
-// 		System.gc();
-// 		System.gc();
-// 		Runtime rt = Runtime.getRuntime();
-// 		long freeMemoryK = rt.freeMemory() / 1024;
-// 		long totalMemoryK = rt.totalMemory() / 1024;
-// 		System.out.print("ListRecords.construct: " + oldResumptionToken);
-// 		System.out.print(" freeMemory=" + freeMemoryK / 1024.0 + "M");
-// 		System.out.print(" of " + totalMemoryK / 1024.0 + "M ");
-// 		System.out.println("(" + (100 * freeMemoryK) / totalMemoryK + "%)");
-// 	    }
 
             Map listRecordsMap = null;
 
@@ -459,7 +458,7 @@ public class ListRecords extends ServerVerb {
                     if (from.compareTo(until) > 0) {
                         throw new BadArgumentException();
                     }
-                    String set = setName;//request.getParameter("set");
+                    String set = (String)requestMap.get("set");//request.getParameter("set");
                     if (set != null) {
                         if (set.length() == 0) {
                             set = null;
@@ -484,7 +483,7 @@ public class ListRecords extends ServerVerb {
                             metadataPrefix);
                     }
                 } catch (NoItemsMatchException e) {
-                    sb.append(getRequestElement(request, validParamNames, baseURL, xmlEncodeSetSpec));
+                    sb.append(getRequestElement(requestMap, validParamNames, baseURL, xmlEncodeSetSpec));
                     sb.append(e.getMessage());
                 } catch (BadArgumentException e) {
                     sb.append("<request verb=\"ListRecords\">");
@@ -495,23 +494,23 @@ public class ListRecords extends ServerVerb {
 // 		    sb.append(getRequestElement(request));
 // 		    sb.append(e.getMessage());
                 } catch (CannotDisseminateFormatException e) {
-                    sb.append(getRequestElement(request, validParamNames, baseURL, xmlEncodeSetSpec));
+                    sb.append(getRequestElement(requestMap, validParamNames, baseURL, xmlEncodeSetSpec));
                     sb.append(e.getMessage());
                 } catch (NoSetHierarchyException e) {
-                    sb.append(getRequestElement(request, validParamNames, baseURL, xmlEncodeSetSpec));
+                    sb.append(getRequestElement(requestMap, validParamNames, baseURL, xmlEncodeSetSpec));
                     sb.append(e.getMessage());
                 }
             } else {
                 validParamNames = validParamNames2;
                 requiredParamNames = requiredParamNames2;
-                if (hasBadArguments(request, requiredParamNames.iterator(), validParamNames)) {
-                    sb.append(getRequestElement(request, validParamNames, baseURL, xmlEncodeSetSpec));
+                if (hasBadArguments(requestMap, requiredParamNames.iterator(), validParamNames)) {
+                    sb.append(getRequestElement(requestMap, validParamNames, baseURL, xmlEncodeSetSpec));
                     sb.append(new BadArgumentException().getMessage());
                 } else {
                     try {
                         listRecordsMap = abstractCatalog.listRecords(oldResumptionToken);
                     } catch (BadResumptionTokenException e) {
-                        sb.append(getRequestElement(request, validParamNames, baseURL, xmlEncodeSetSpec));
+                        sb.append(getRequestElement(requestMap, validParamNames, baseURL, xmlEncodeSetSpec));
                         sb.append(e.getMessage());
                     }
                 }
@@ -519,8 +518,8 @@ public class ListRecords extends ServerVerb {
             logger.log(Level.INFO, "listRecordsMap:size={0}", listRecordsMap.size());
 
             if (listRecordsMap != null) {
-                sb.append(getRequestElement(request, validParamNames, baseURL, xmlEncodeSetSpec));
-                if (hasBadArguments(request, requiredParamNames.iterator(),
+                sb.append(getRequestElement(requestMap, validParamNames, baseURL, xmlEncodeSetSpec));
+                if (hasBadArguments(requestMap, requiredParamNames.iterator(),
                     validParamNames)) {
                     sb.append(new BadArgumentException().getMessage());
                 } else {
@@ -576,7 +575,6 @@ public class ListRecords extends ServerVerb {
 //            return render(response, "text/xml; charset=UTF-8", sb.toString(), serverTransformer);
 //        }
     }
-    
     
     
     

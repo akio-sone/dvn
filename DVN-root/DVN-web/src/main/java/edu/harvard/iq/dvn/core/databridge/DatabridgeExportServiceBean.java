@@ -6,20 +6,23 @@
 package edu.harvard.iq.dvn.core.databridge;
 
 import ORG.oclc.oai.server.catalog.AbstractCatalog;
-import ORG.oclc.oai.server.verb.CannotDisseminateFormatException;
 import ORG.oclc.oai.server.verb.ListRecords;
-import ORG.oclc.oai.server.verb.NoItemsMatchException;
 import ORG.oclc.oai.server.verb.OAIInternalServerError;
-import ORG.oclc.oai.server.verb.ServerVerb;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
 import edu.harvard.iq.dvn.core.web.oai.catalog.DVNOAICatalog;
+import edu.harvard.iq.dvn.core.web.oai.catalog.DVNXMLRecordFactory;
+import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -27,10 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
 
 /**
  *
@@ -41,11 +41,12 @@ public class DatabridgeExportServiceBean {
 
     private static final Logger logger
         = Logger.getLogger(DatabridgeExportServiceBean.class.getName());
-    private XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
+//    private XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
 //    String outFileName="databridge-export";
 //    String metadataPrefix="ddi";
     String oaicatPropertiesFilename = "oaicat.properties";
     String absPathToDatafile = System.getProperty("dvn.databridge.ddi.export.dir");
+    String ddiExportFilename="databridge_ddi_export_";
 //
 //    String verb ="ListRecords";
 //    
@@ -58,7 +59,7 @@ public class DatabridgeExportServiceBean {
     void init() {
 
         logger.log(Level.INFO, "+++++++++ DatabridgeExportServiceBean#init() starts here");
-        xstream.setMode(XStream.NO_REFERENCES);
+//        xstream.setMode(XStream.NO_REFERENCES);
         if (absPathToDatafile == null) {
             absPathToDatafile = System.getProperty("jhove.conf.dir");
             logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): absPathToDatafile is set to={0}", absPathToDatafile);
@@ -100,7 +101,6 @@ public class DatabridgeExportServiceBean {
 
 //            if (in != null) {
                 logger.log(Level.INFO, "properties file was found: Load the properties");
-                logger.log(Level.WARNING, "file was found: Load the properties");
 
                 properties = new Properties();
 
@@ -109,12 +109,12 @@ public class DatabridgeExportServiceBean {
                 logger.log(Level.INFO, "calling DatabridgeExportServiceBean#getAttributes(Properties) to add more data");
                 
                 
-                logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): properties before getAttributes():\n{0}", 
-                            xstream.toXML(properties));
+                logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): properties before getAttributes():\n{0}", properties.stringPropertyNames());
+//                            xstream.toXML(properties));
                 attributes = getAttributes(properties);
 
-                    logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): attributes after getAttributes():\n{0}", 
-                            xstream.toXML(attributes));
+//                    logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): attributes after getAttributes():\n{0}", 
+//                            xstream.toXML(attributes));
                 
                     // if (debug) System.out.println("OAIHandler.init: fileName=" + fileName);
 //            } else {
@@ -126,8 +126,8 @@ public class DatabridgeExportServiceBean {
             
             attributesMap.put("global", attributes);
             
-            logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): attributesMap:\n{0}", 
-                            xstream.toXML(attributesMap));
+//            logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): attributesMap:\n{0}", 
+//                            xstream.toXML(attributesMap));
             
 
         } catch (FileNotFoundException e) {
@@ -195,6 +195,16 @@ public class DatabridgeExportServiceBean {
 //                    = AbstractCatalog.factory(properties, context);
                 AbstractCatalog abstractCatalog = new DVNOAICatalog(properties);
                 
+                abstractCatalog.setRecordFactory(new DVNXMLRecordFactory(properties));
+                
+                abstractCatalog.setSupportedGranularityOffset(1);
+                
+
+                
+                
+                
+                
+                
                 attributes.put("OAIHandler.catalog", abstractCatalog);
             }
             
@@ -237,238 +247,60 @@ public class DatabridgeExportServiceBean {
     }
     
     
-    public void doGet() throws Throwable {
-        
-        logger.log(Level.INFO, "++++++++++ OAIHandler#doGet(...) starts here ++++++++++");
-        
-//        the follow line in the original is irrelevant        
-//        HashMap attributes = getAttributes(request.getPathInfo());
-//        if (!filterRequest(request, response)) {
-//            return;
-//        }
-        
-        
-        //log.debug("attributes=" + attributes);
-        
-        
-        Properties properties = (Properties)attributes.get("OAIHandler.properties");
-        
-        logger.log(Level.INFO, "DatabridgeExportServiceBean#doGet(): properties:\n{0}", 
-                            xstream.toXML(properties));
-        
-        
-        //    (Properties) attributes.get("OAIHandler.properties");
-        boolean monitor = false;
-//        if (properties.getProperty("OAIHandler.monitor") != null) {
-//            monitor = true;
-//        }
-//        boolean serviceUnavailable = isServiceUnavailable(properties);
-//        String extensionPath = properties.getProperty("OAIHandler.extensionPath", "/extension");
-//        
-        HashMap serverVerbs = ServerVerb.getVerbs(properties);
-//        HashMap extensionVerbs = ServerVerb.getExtensionVerbs(properties);
-//        
-//        Transformer transformer =
-//            (Transformer) attributes.get("OAIHandler.transformer");
-//        
-//        boolean forceRender = false;
-//        if ("true".equals(properties.getProperty("OAIHandler.forceRender"))) {
-//            forceRender = true;
-//        }
-        
-//      try {
-//        request.setCharacterEncoding("UTF-8");
-//      } catch (UnsupportedEncodingException e) {
-//      e.printStackTrace();
-//      throw new IOException(e.getMessage());
-//      }
-//        Date then = null;
-//        if (monitor) then = new Date();
-//        if (debug) {
-//            Enumeration headerNames = request.getHeaderNames();
-            //System.out.println("OAIHandler.doGet: ");
-//            logger.log(Level.INFO, "OAIHandler#doGet(): dumping the contents of headerNames:");
-//            while (headerNames.hasMoreElements()) {
-//                String headerName = (String)headerNames.nextElement();
-////                System.out.print(headerName);
-////                System.out.print(": ");
-////                System.out.println(request.getHeader(headerName));
-//                logger.log(Level.INFO, "headerName={0}:value stored in request={1}", 
-//                        new Object[]{headerName, request.getHeader(headerName)});
-//            }
-//        }
-//        if (serviceUnavailable) {
-//            response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE,
-//            "Sorry. This server is down for maintenance");
-//        } else {
-            logger.log(Level.INFO, "service available case");
-//            try {
-//                String userAgent = request.getHeader("User-Agent");
-//                if (userAgent == null) {
-//                    userAgent = "";
-//                } else {
-//                    userAgent = userAgent.toLowerCase();
-//                }
-//                Transformer serverTransformer = null;
-//                if (transformer != null) {
-//                    
-//                    // return HTML if the client is an old browser
-//                    if (forceRender
-//                            || userAgent.indexOf("opera") != -1
-//                            || (userAgent.startsWith("mozilla")
-//                                    && userAgent.indexOf("msie 6") == -1
-//                            /* && userAgent.indexOf("netscape/7") == -1 */)) {
-//                        serverTransformer = transformer;
-//                    }
-//                }
-                logger.log(Level.INFO, "OAIHandler#doGet(): calling getResult() as String");
-                String result = getResult(properties, null, null, 
-                        null, serverVerbs, null, null);
-//              log.debug("result=" + result);
-                
-//              if (serverTransformer) { // render on the server
-//              response.setContentType("text/html; charset=UTF-8");
-//              StringReader stringReader = new StringReader(getResult(request));
-//              StreamSource streamSource = new StreamSource(stringReader);
-//              StringWriter stringWriter = new StringWriter();
-//              transformer.transform(streamSource, new StreamResult(stringWriter));
-//              result = stringWriter.toString();
-//              } else { // render on the client
-//              response.setContentType("text/xml; charset=UTF-8");
-//              result = getResult(request);
-//              }
-                logger.log(Level.INFO, "OAIHandler#doGet(): create writer to dump the above result");
-//                Writer out = getWriter(request, response);
-//                out.write(result);
-//                out.close();
-                logger.log(Level.INFO, "OAIHandler#doGet(): closing the writer");
-//            } catch (FileNotFoundException e) {
-//                logger.log(Level.WARNING, "SC_NOT_FOUND:{0}", e.getMessage());
-//                response.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
-//            } catch (TransformerException e) {
-//
-//            } catch (OAIInternalServerError e) {
-//
-//            } catch (SocketException e) {
-
-//            } catch (Throwable e) {
-
-//            }
-//        }
-//        if (monitor) {
-//            StringBuffer reqUri = new StringBuffer(request.getRequestURI().toString());
-//            String queryString = request.getQueryString();   // d=789
-//            if (queryString != null) {
-//                reqUri.append("?").append(queryString);
-//            }
-//            Runtime rt = Runtime.getRuntime();
-//            System.out.println(rt.freeMemory() + "/" + rt.totalMemory() + " "
-//                    + ((new Date()).getTime()-then.getTime()) + "ms: "
-//                    + reqUri.toString());
-//        }
-        logger.log(Level.INFO, "DatabridgeExportServiceBean#doGet(): result:\n{0}", result);
-        logger.log(Level.INFO, "++++++++++ DatabridgeExportServiceBean#doGet(...) ends here ++++++++++");
-        
-        
-    }
-    
-    public static String getResult(Properties attributes,
-            HttpServletRequest request,
-            HttpServletResponse response,
-            Transformer serverTransformer,
-            HashMap serverVerbs,
-            HashMap extensionVerbs,
-            String extensionPath)
-    throws Throwable {
-        logger.log(Level.INFO, "++++++++++ DatabridgeExportServiceBean#getResult(...) starts here ++++++++++");
-        try {
-            //boolean isExtensionVerb = extensionPath.equals(request.getPathInfo());
-            String verb = "ListRecords";//request.getParameter("verb");
-//            if (debug) {
-//                System.out.println("OAIHandler.g<etResult: verb=>" + verb + "<");
-//            }
-            logger.log(Level.INFO, "OAIHandler.g<etResult: verb=>{0}<", verb);
-            
-            String result;
-            Class verbClass = null;
-//            if (isExtensionVerb) {
-//                verbClass = (Class)extensionVerbs.get(verb);
-//                logger.log(Level.INFO, "The called verb is an extension one");
-//            } else {
-                verbClass = (Class)serverVerbs.get(verb);
-                logger.log(Level.INFO, "The called verb is a regular one");
-//            }
-            
-            if (verbClass == null) {
-                verbClass = (Class) attributes.get("OAIHandler.missingVerbClass");
-                logger.log(Level.INFO, "verbClass is null: using the value of OAIHandler.missingVerbClass");
-            } else {
-                logger.log(Level.INFO, "verbClass is not null");
-            }
-            
-            logger.log(Level.INFO, "Creating the verb class {0} by using reflection", 
-                    verbClass.getName());
-            Method construct = verbClass.getMethod("construct",
-                    new Class[] {HashMap.class,
-                    HttpServletRequest.class,
-                    HttpServletResponse.class,
-                    Transformer.class});
-            try {
-                logger.log(Level.INFO, "getting back result from the invoked verb");
-                result = (String)construct.invoke(null,
-                        new Object[] {attributes,
-                        request,
-                        response,
-                        serverTransformer});
-            } catch (InvocationTargetException e) {
-                throw e.getTargetException();
-            }
-//            if (debug) {
-//                System.out.println(result);
-//            }
-            logger.log(Level.INFO, "DatabridgeExportServiceBean#getResult(...):result={0}", result);
-            
-        logger.log(Level.INFO, "++++++++++ leaving DatabridgeExportServiceBean#getResult(...) ++++++++++");
-        
-            return result;
-        } catch (NoSuchMethodException e) {
-            logger.log(Level.WARNING, "NoSuchMethodException", e);
-            throw new OAIInternalServerError(e.getMessage());
-        } catch (IllegalAccessException e) {
-            logger.log(Level.WARNING, "IllegalAccessException", e);
-            throw new OAIInternalServerError(e.getMessage());
-        }
-    }
-    
     
     public void renderRecords(String setName){
         
-        Properties properties = 
-            (Properties)attributes.get("OAIHandler.properties");
-        
-        logger.log(Level.INFO, "DatabridgeExportServiceBean#renderRecords(): properties:\n{0}", 
-                            xstream.toXML(properties));
-        
-        String verb = "ListRecords";
-        HashMap serverVerbs = ServerVerb.getVerbs(properties);
-//        try {
+        OutputStream outs = null;
+        try {
+            
+            
+            String exportFilename = 
+                    absPathToDatafile + "/" + ddiExportFilename +setName+".xml";
+            logger.log(Level.INFO, "exportFilename={0}", exportFilename);
+            
+            Properties properties =
+                    (Properties)attributes.get("OAIHandler.properties");
+            
+            logger.log(Level.INFO, "DatabridgeExportServiceBean#renderRecords(): properties:\n{0}",
+                    properties.stringPropertyNames());
+            
+//            String verb = "ListRecords";
+//            HashMap serverVerbs = ServerVerb.getVerbs(properties);
 
+            logger.log(Level.INFO, "DatabridgeExportServiceBean#renderRecords(): calling ListRecords");
+//            String result = getResult(properties, null, null,
+//                    null, serverVerbs, null, null);
+            Map requestMap = new HashMap();
             
-            // Class verbClass = (Class)serverVerbs.get(verb);
+            requestMap.put("verb", "ListRecords");
+            requestMap.put("metadataPrefix", "ddi");
+            requestMap.put("set", setName);
+            String baseURL = "http://localhost:8080/dvn/OAIHandler";
             
-            ListRecords ls = new ListRecords();
+            // public static String construct(Map attributes, Map requestMap, String baseURL)
+            String result = ListRecords.construct(attributes, requestMap, baseURL);
             
-//            DVNOAICatalog catalog = new DVNOAICatalog(properties);
-//            // String from, String until, String set, String metadataPrefix)
-//            Map tmpMap = catalog.listRecords(null, null, setName, "ddi");
-//        } catch (CannotDisseminateFormatException ex) {
-//            logger.log(Level.SEVERE, "CannotDisseminateFormatException", ex);
-//        } catch (NoItemsMatchException ex) {
-//            logger.log(Level.SEVERE, "NoItemsMatchException", ex);
-//        }
-        
-        
-        
+            logger.log(Level.INFO, "result from ListRecords class:\n{0}", result);
+            
+            File expf = new File(exportFilename);
+            outs = new BufferedOutputStream(new FileOutputStream(expf));
+            PrintWriter pw = new PrintWriter(new OutputStreamWriter(outs, "utf8"), true);
+            pw.println(result);
+            outs.close();
+            
+        } catch (OAIInternalServerError ex) {
+            logger.log(Level.SEVERE, "OAIInternalServerError", ex);
+        } catch (TransformerException ex) {
+            logger.log(Level.SEVERE, "TransformerException", ex);
+        } catch (FileNotFoundException ex) {
+            logger.log(Level.SEVERE, "FileNotFoundException", ex);
+        } catch (UnsupportedEncodingException ex) {
+            logger.log(Level.SEVERE, "UnsupportedEncodingException", ex);
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, "IOException", ex);
+        } finally {
+            logger.log(Level.INFO, "leaving DatabridgeExportServiceBean#renderRecords()");
+        }
         
         
     }

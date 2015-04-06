@@ -34,6 +34,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import ORG.oclc.oai.util.OAIUtil;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 //import javax.servlet.http.HttpUtils;
@@ -143,7 +144,10 @@ public abstract class ServerVerb {
             String name = (String)params.nextElement();
             logger.log(Level.INFO, "ServerVerb#getRequestElement():name={0}", name);
             if (validParamNames.contains(name)) {
+                logger.log(Level.INFO, "ServerVerb#getRequestElement():validParamNames contains {0}", name);
                 String value = request.getParameter(name);
+                logger.log(Level.INFO, "ServerVerb#getRequestElement():name-value:{0}={1}", 
+                        new Object[] {name, value});
                 if (value != null && value.length() > 0) {
                     sb.append(" ");
                     sb.append(name);
@@ -175,6 +179,9 @@ public abstract class ServerVerb {
         while (requiredParamNames.hasNext()) {
             String name = (String)requiredParamNames.next();
             String value = request.getParameter(name);
+            logger.log(Level.INFO, "ServerVerb#hasBadArguments():name-value:{0}={1}",
+                    new Object[]{name, value});
+            
             if (value == null || value.length() == 0) {
                 return true;
             }
@@ -192,6 +199,7 @@ public abstract class ServerVerb {
             }
         }
         String identifier = request.getParameter("identifier");
+        logger.log(Level.INFO, "ServerVerb#hasBadArguments():identifier={0}", identifier);
         try {
             if (identifier != null && identifier.length() > 0) {
                 identifier = URLEncoder.encode(identifier, "UTF-8");
@@ -307,4 +315,102 @@ public abstract class ServerVerb {
         }
         return extensionVerbsMap;
     }
+
+    
+    protected static String getRequestElement(Map requestMap,
+            List validParamNames,
+            String baseURL) {
+        return getRequestElement(requestMap, validParamNames, baseURL, false);
+    }
+
+    protected static String getRequestElement(Map requestMap,
+            List validParamNames,
+            String baseURL,
+            boolean xmlEncodeSetSpec) {
+        StringBuffer sb = new StringBuffer();
+        sb.append("<request");
+        //Enumeration params = request.getParameterNames();
+        Iterator entries = requestMap.entrySet().iterator();
+        //while (params.hasMoreElements()) {
+        while (entries.hasNext()){
+            Map.Entry entry = (Map.Entry) entries.next();
+            String name = (String)entry.getKey();
+            //String name = (String)params.nextElement();
+            
+            logger.log(Level.INFO, "ServerVerb#getRequestElement():name={0}", name);
+            if (validParamNames.contains(name)) {
+                //String value = request.getParameter(name);
+                String value = (String)entry.getValue();
+                if (value != null && value.length() > 0) {
+                    sb.append(" ");
+                    sb.append(name);
+                    sb.append("=\"");
+                    if (!xmlEncodeSetSpec && "set".equals(name)) {
+//                      try {
+                        sb.append(value);
+//                      sb.append(URLEncoder.encode(value, "UTF-8"));
+//                      } catch (UnsupportedEncodingException e) {
+//                      e.printStackTrace();
+//                      sb.append("UnsupportedEncodingException");
+//                      }
+                    } else {
+                        sb.append(OAIUtil.xmlEncode(value));
+                    }
+                    sb.append("\"");
+                }
+            }
+        }
+        sb.append(">");
+        sb.append(baseURL);
+        sb.append("</request>");
+        return sb.toString();
+    }
+    
+    protected static boolean hasBadArguments(Map requestMap,
+            Iterator requiredParamNames,
+            List validParamNames) {
+        
+        
+        while (requiredParamNames.hasNext()) {
+            String name = (String)requiredParamNames.next();
+            String value = (String)requestMap.get(name);//request.getParameter(name);
+            logger.log(Level.INFO, "ServerVerb#hasBadArguments():name-value:{0}={1}",
+                    new Object[]{name, value});
+            
+            if (value == null || value.length() == 0) {
+                return true;
+            }
+        }
+        //Enumeration params = request.getParameterNames();
+        Iterator entries = requestMap.entrySet().iterator();
+        // while (params.hasMoreElements()) {
+        while (entries.hasNext()){
+            Map.Entry entry = (Map.Entry) entries.next();
+            //String name = (String)params.nextElement();
+            String name = (String)entry.getKey();
+            logger.log(Level.INFO, "ServerVerb#hasBadArguments():name={0}", name);
+            
+            if (!validParamNames.contains(name)) {
+                return true;
+            //} else if (request.getParameterValues(name).length > 1) {
+            //    return true;
+            }
+        }
+        
+        
+        
+        String identifier =  (String)requestMap.get("identifier");//request.getParameter("identifier");
+        logger.log(Level.INFO, "ServerVerb#hasBadArguments():identifier={0}", identifier);
+        try {
+            if (identifier != null && identifier.length() > 0) {
+                identifier = URLEncoder.encode(identifier, "UTF-8");
+                new URI(identifier);
+            }
+        } catch (Exception e) {
+            return true;
+        }
+        return false;
+    }
+    
+
 }

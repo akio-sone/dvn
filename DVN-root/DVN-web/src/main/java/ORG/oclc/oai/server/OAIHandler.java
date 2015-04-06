@@ -48,6 +48,7 @@ import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * OAIHandler is the primary Servlet for OAICat.
@@ -104,7 +105,7 @@ public class OAIHandler extends HttpServlet {
         super.init(config);
         logger.log(Level.INFO, "+++++++++ OAIHandler#init() starts here");
         
-        //xstream.setMode(XStream.NO_REFERENCES);
+        xstream.setMode(XStream.NO_REFERENCES);
         try {
             HashMap attributes = null;
             ServletContext context = getServletContext();
@@ -154,12 +155,12 @@ public class OAIHandler extends HttpServlet {
                     properties.load(in);
                     
                     logger.log(Level.INFO, "calling OAIHandler#getAttributes(Properties) to add more data");
-//                    logger.log(Level.INFO, "OAIHandler#init(): properties before getAttributes():\n{0}", 
-//                            xstream.toXML(properties));
+                    logger.log(Level.INFO, "OAIHandler#init(): properties before getAttributes():\n{0}", 
+                            xstream.toXML(properties));
                     attributes = getAttributes(properties);
                     
-//                    logger.log(Level.INFO, "OAIHandler#init(): attributes after getAttributes():\n{0}", 
-//                            xstream.toXML(attributes));
+                    logger.log(Level.INFO, "OAIHandler#init(): attributes after getAttributes():\n{0}", 
+                           StringUtils.join(attributes.keySet(), "\n"));
                     // if (debug) System.out.println("OAIHandler.init: fileName=" + fileName);
 
                 }
@@ -198,9 +199,19 @@ public class OAIHandler extends HttpServlet {
         logger.log(Level.INFO, "+++++++++ OAIHandler#getAttributes(Properties) starts here");
         
         HashMap attributes = new HashMap();
+        
         Enumeration attrNames = getServletContext().getAttributeNames();
+        logger.log(Level.INFO, "attrNames(Enumeration)={0}", attrNames);
         while (attrNames.hasMoreElements()) {
             String attrName = (String)attrNames.nextElement();
+//            logger.log(Level.INFO, "OAIHandler#getAttributes(Properties):attrName={0}", 
+//                    attrName);
+//            logger.log(Level.INFO, "OAIHandler#getAttributes(Properties):itsValue={0}", 
+//                    getServletContext().getAttribute(attrName));
+//            
+            logger.log(Level.INFO, "OAIHandler#getAttributes(Properties):key-value:{0}={1}", 
+                   new Object[]{attrName, getServletContext().getAttribute(attrName)});
+            
             attributes.put(attrName, getServletContext().getAttribute(attrName));
         }
         

@@ -28,6 +28,7 @@
 package edu.harvard.iq.dvn.core.catalog;
 
 import ORG.oclc.oai.server.verb.NoItemsMatchException;
+import com.thoughtworks.xstream.XStream;
 import edu.harvard.iq.dvn.core.harvest.HarvestStudy;
 import edu.harvard.iq.dvn.core.harvest.HarvestStudyServiceLocal;
 import edu.harvard.iq.dvn.core.index.IndexServiceLocal;
@@ -72,7 +73,7 @@ public class CatalogServiceBean implements CatalogServiceLocal {
     @EJB HarvestStudyServiceLocal harvestStudyService;
     
     private static final Logger logger = Logger.getLogger("edu.harvard.iq.dvn.core.catalog.CatalogServiceBean");
-    
+        private XStream xstream = new XStream();
     /** Creates a new instance of CatalogServiceBean */
     public CatalogServiceBean() {
     }
@@ -238,6 +239,8 @@ public class CatalogServiceBean implements CatalogServiceLocal {
         }
         logger.log(Level.INFO, "records.size={0}", records.size());
         String [] s = new String[records.size()];
+        logger.log(Level.INFO, "CatalogServiceBean#listRecords(...):records:\n{0}",
+            records);
         logger.log(Level.INFO, "=========== leaving CatalogServiceBean#listRecords(...) ==========");        
         return records.toArray(s);        
      }

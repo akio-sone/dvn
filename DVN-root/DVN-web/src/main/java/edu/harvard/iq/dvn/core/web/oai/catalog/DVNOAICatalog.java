@@ -567,8 +567,8 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
         throws CannotDisseminateFormatException, NoItemsMatchException {
         
         logger.log(Level.INFO, "+++++++++++++ DVNOAICatalog#listRecords(...) is called +++++++++++++ ");
-        logger.log(Level.INFO, "set name={0}", set);
-        logger.log(Level.INFO, "metadataPrefix={0}", metadataPrefix);
+        logger.log(Level.INFO, "DVNOAICatalog#listRecords: set name={0}", set);
+        logger.log(Level.INFO, "DVNOAICatalog#listRecords: metadataPrefix={0}", metadataPrefix);
         
         purge(); // clean out old resumptionTokens
         Map listRecordsMap = new HashMap();
@@ -577,7 +577,7 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
         /**********************************************************************
          * YOUR CODE GOES HERE
          **********************************************************************/
-        logger.log(Level.INFO, "calling CatalogServiceBean");
+        logger.log(Level.INFO, "DVNOAICatalog#listRecords(): calling CatalogServiceBean");
         CatalogServiceLocal catalogService = null;
         try {
             catalogService=(CatalogServiceLocal)new InitialContext().lookup("java:comp/env/catalogService");
@@ -601,7 +601,7 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
         
          logger.log(Level.INFO, "calling CatalogServiceBean#listRecords method =>HarvestStudyServiceBean is called");
         String[]  xmlRecords = catalogService.listRecords(from, until, set, metadataPrefix);  //ejb
-        logger.log(Level.INFO, "xmlRecords.length={0} from CatalogServiceBean", 
+        logger.log(Level.INFO, "DVNOAICatalog#listRecords(): xmlRecords.length={0} from CatalogServiceBean", 
                 xmlRecords.length);
 
         /* Get some records from your database */
@@ -609,12 +609,13 @@ public class DVNOAICatalog extends AbstractCatalog implements java.io.Serializab
         if (nativeItem.length == 0){
             throw new NoItemsMatchException();
         } else {
-            logger.log(Level.INFO, "nativeItem.length={0}", nativeItem.length);
+            logger.log(Level.INFO, "DVNOAICatalog#listRecords(): nativeItem.length={0}", nativeItem.length);
         }
 //        String[] nativeItem = (String[]) records.toArray(xmlRecords); //web
         int count;
 
         /* load the records ArrayList */
+        logger.log(Level.INFO, "DVNOAICatalog#listRecords(): calling constructRecord()");
         for (count=0; count < maxListSize && count < nativeItem.length; ++count) {
             String record = constructRecord(nativeItem[count], metadataPrefix);
             records.add(record);

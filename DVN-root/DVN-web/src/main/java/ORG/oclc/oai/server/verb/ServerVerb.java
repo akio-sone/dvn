@@ -139,7 +139,9 @@ public abstract class ServerVerb {
         sb.append("<request");
         Enumeration params = request.getParameterNames();
         while (params.hasMoreElements()) {
+            
             String name = (String)params.nextElement();
+            logger.log(Level.INFO, "ServerVerb#getRequestElement():name={0}", name);
             if (validParamNames.contains(name)) {
                 String value = request.getParameter(name);
                 if (value != null && value.length() > 0) {
@@ -180,6 +182,9 @@ public abstract class ServerVerb {
         Enumeration params = request.getParameterNames();
         while (params.hasMoreElements()) {
             String name = (String)params.nextElement();
+            
+            logger.log(Level.INFO, "ServerVerb#hasBadArguments():name={0}", name);
+            
             if (!validParamNames.contains(name)) {
                 return true;
             } else if (request.getParameterValues(name).length > 1) {

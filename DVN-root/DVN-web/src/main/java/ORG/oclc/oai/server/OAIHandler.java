@@ -66,7 +66,8 @@ public class OAIHandler extends HttpServlet {
 //    private static boolean debug = true;
     private static final Logger logger = Logger.getLogger(OAIHandler.class.getName());
     
-    private XStream xstream = new XStream(new JsonHierarchicalStreamDriver());
+    private XStream xstream = new XStream();
+    
 
 
 //    private Transformer transformer = null;
@@ -102,6 +103,8 @@ public class OAIHandler extends HttpServlet {
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
         logger.log(Level.INFO, "+++++++++ OAIHandler#init() starts here");
+        
+        //xstream.setMode(XStream.NO_REFERENCES);
         try {
             HashMap attributes = null;
             ServletContext context = getServletContext();
@@ -406,10 +409,10 @@ public class OAIHandler extends HttpServlet {
                 
         logger.log(Level.INFO, "OAIHandler#doGet(): attributes:\n{0}",
                 attributes);
-        logger.log(Level.INFO, "OAIHandler#doGet(): request:\n{0}",
-                request);
-        logger.log(Level.INFO, "OAIHandler#doGet(): response:\n{0}",
-                response);
+//        logger.log(Level.INFO, "OAIHandler#doGet(): request:\n{0}",
+//                xstream.toXML(request));
+//        logger.log(Level.INFO, "OAIHandler#doGet(): response:\n{0}",
+//                response);
 
         
                 

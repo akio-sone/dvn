@@ -239,7 +239,7 @@ public class CatalogServiceBean implements CatalogServiceLocal {
         }
         logger.log(Level.INFO, "records.size={0}", records.size());
         String [] s = new String[records.size()];
-        logger.log(Level.INFO, "CatalogServiceBean#listRecords(...):records:\n{0}",
+        logger.log(Level.FINE, "CatalogServiceBean#listRecords(...):records:\n{0}",
             records);
         logger.log(Level.INFO, "=========== leaving CatalogServiceBean#listRecords(...) ==========");        
         return records.toArray(s);        

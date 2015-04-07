@@ -566,7 +566,7 @@ public class ListRecords extends ServerVerb {
 //            System.out.println("ListRecords.constructListRecords: returning: " + sb.toString());
 //        }
         logger.log(Level.INFO, "String-building completed");
-        logger.log(Level.INFO, "ListRecords#constructListRecords(...): String to be returned:\n{0}",
+        logger.log(Level.FINE, "ListRecords#constructListRecords(...): String to be returned:\n{0}",
             sb.toString());
         logger.log(Level.INFO, "********** leaving ListRecords#construct(...) *********");
 //        if (serverTransformer == null) {

@@ -356,9 +356,9 @@ public abstract class RecordFactory {
             }
         }
         xmlRec.append("</record>");
-        logger.log(Level.INFO, "building <record> ended");
+        logger.log(Level.INFO, "RecordFactory#create(): building <record> ended");
         //if (debug) System.out.println("RecordFactory.create: return=" + xmlRec.toString());
-        logger.log(Level.INFO, "RecordFactory#create(): xmlRec to be return={0}", xmlRec.toString());
+        logger.log(Level.FINE, "RecordFactory#create(): xmlRec to be return={0}", xmlRec.toString());
         logger.log(Level.INFO, "========== leaving RecordFactory#create()  ==========");
         return xmlRec.toString();
     }

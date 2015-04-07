@@ -61,7 +61,7 @@ public class DatabridgeExportServiceBean {
         logger.log(Level.INFO, "+++++++++ DatabridgeExportServiceBean#init() starts here");
 //        xstream.setMode(XStream.NO_REFERENCES);
         if (absPathToDatafile == null) {
-            absPathToDatafile = System.getProperty("jhove.conf.dir");
+            absPathToDatafile = "../docroot";//System.getProperty("jhove.conf.dir");
             logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): absPathToDatafile is set to={0}", absPathToDatafile);
         } else {
             logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): absPathToDatafile={0}", absPathToDatafile);
@@ -78,7 +78,8 @@ public class DatabridgeExportServiceBean {
 
             logger.log(Level.INFO, "DatabridgeExportServiceBean#init(): properties-null-case");
 
-            String fileName = absPathToDatafile + "/" + oaicatPropertiesFilename;
+            String fileName = System.getProperty("jhove.conf.dir") + "/" + 
+                    oaicatPropertiesFilename;
                         //config.getServletContext().getInitParameter(PROPERTIES_INIT_PARAMETER);
 
             /*
@@ -249,14 +250,14 @@ public class DatabridgeExportServiceBean {
     
     
     public void renderRecords(String setName){
-        
+            logger.log(Level.INFO, "+++++++++ DatabridgeExportServiceBean#renderRecords() starts here +++++++++");
         OutputStream outs = null;
         try {
             
             
             String exportFilename = 
                     absPathToDatafile + "/" + ddiExportFilename +setName+".xml";
-            logger.log(Level.INFO, "exportFilename={0}", exportFilename);
+            logger.log(Level.INFO, "DatabridgeExportServiceBean#renderRecords(): exportFilename={0}", exportFilename);
             
             Properties properties =
                     (Properties)attributes.get("OAIHandler.properties");
@@ -280,7 +281,7 @@ public class DatabridgeExportServiceBean {
             // public static String construct(Map attributes, Map requestMap, String baseURL)
             String result = ListRecords.construct(attributes, requestMap, baseURL);
             
-            logger.log(Level.INFO, "result from ListRecords class:\n{0}", result);
+            logger.log(Level.FINE, "DatabridgeExportServiceBean#renderRecords(): result from ListRecords class:\n{0}", result);
             
             File expf = new File(exportFilename);
             outs = new BufferedOutputStream(new FileOutputStream(expf));
@@ -299,7 +300,7 @@ public class DatabridgeExportServiceBean {
         } catch (IOException ex) {
             logger.log(Level.SEVERE, "IOException", ex);
         } finally {
-            logger.log(Level.INFO, "leaving DatabridgeExportServiceBean#renderRecords()");
+            logger.log(Level.INFO, "+++++++++ leaving DatabridgeExportServiceBean#renderRecords() +++++++++");
         }
         
         

@@ -31,6 +31,7 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
 import javax.xml.transform.TransformerException;
+import org.renci.databridge.contrib.dataloader.DataLoader;
 
 /**
  *
@@ -46,6 +47,7 @@ public class DatabridgeExportServiceBean {
 //    String metadataPrefix="ddi";
     String oaicatPropertiesFilename = "oaicat.properties";
     String absPathToDatafile = System.getProperty("dvn.databridge.ddi.export.dir");
+    static final String OAI_HANDLER_URL = System.getProperty("dvn.oai.handler.url","http://localhost:8080/dvn/OAIHandler");
     String ddiExportFilename="databridge_ddi_export_";
 //
 //    String verb ="ListRecords";
@@ -59,6 +61,7 @@ public class DatabridgeExportServiceBean {
     void init() {
 
         logger.log(Level.INFO, "+++++++++ DatabridgeExportServiceBean#init() starts here");
+        logger.log(Level.INFO, "OAI_HANDLER_URL={0}", OAI_HANDLER_URL);
 //        xstream.setMode(XStream.NO_REFERENCES);
         if (absPathToDatafile == null) {
             absPathToDatafile = "../docroot";//System.getProperty("jhove.conf.dir");
@@ -276,7 +279,7 @@ public class DatabridgeExportServiceBean {
             requestMap.put("verb", "ListRecords");
             requestMap.put("metadataPrefix", "ddi");
             requestMap.put("set", setName);
-            String baseURL = "http://localhost:8080/dvn/OAIHandler";
+            String baseURL = OAI_HANDLER_URL;
             
             // public static String construct(Map attributes, Map requestMap, String baseURL)
             String result = ListRecords.construct(attributes, requestMap, baseURL);
@@ -288,6 +291,32 @@ public class DatabridgeExportServiceBean {
             PrintWriter pw = new PrintWriter(new OutputStreamWriter(outs, "utf8"), true);
             pw.println(result);
             outs.close();
+            
+            
+            logger.log(Level.INFO, "file-existence check before calling DataLoader#main()");
+            File listRecordsFile = new File(exportFilename);
+            if (!listRecordsFile.exists()){
+                throw new FileNotFoundException("ListRecord File ("+exportFilename+
+                        ") does not exist");
+            }
+            
+            
+            
+            
+            String[] args4dl = new String[4];
+            args4dl[0] =  
+                    System.getProperty("jhove.conf.dir") + "/DataBridge.conf";
+            args4dl[1] = "org.renci.databridge.contrib.formatter.oaipmh.OaipmhMetadataFormatterImpl";
+            args4dl[2] = "dvn_namespace";
+            
+            args4dl[3] = exportFilename;
+            for (String s: args4dl){
+            logger.log(Level.INFO, "each of the 4 arguments for DataLoader#main[]:{0}",s);
+            }
+            logger.log(Level.INFO, "entering Databridge: DataLoader#main()");
+            DataLoader.main(args4dl);
+            logger.log(Level.INFO, "returned from Databridge: DataLoader#main()");
+            
             
         } catch (OAIInternalServerError ex) {
             logger.log(Level.SEVERE, "OAIInternalServerError", ex);

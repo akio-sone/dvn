@@ -27,6 +27,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.persistence.*;
 
 /**
@@ -35,6 +37,8 @@ import javax.persistence.*;
  */
 @Entity
 public class GuestBookResponse implements Serializable {
+    private static final Logger logger = 
+            Logger.getLogger(GuestBookResponse.class.getName());
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -93,6 +97,9 @@ public class GuestBookResponse implements Serializable {
         this.setVdcUser(source.getVdcUser());
         this.setSessionId(source.getSessionId());
         List <CustomQuestionResponse> customQuestionResponses = new ArrayList();
+        
+        if (source.getCustomQuestionResponses() != null){
+            logger.log(Level.INFO, "Within the 2nd constructor: getCustomQuestionResponses returns NOT null => source contains non-null customQuestionResponse");
         if (!source.getCustomQuestionResponses().isEmpty()){
             for (CustomQuestionResponse customQuestionResponse : source.getCustomQuestionResponses() ){
                 CustomQuestionResponse customQuestionResponseAdd = new CustomQuestionResponse();
@@ -102,6 +109,12 @@ public class GuestBookResponse implements Serializable {
                 customQuestionResponses.add(customQuestionResponseAdd);
             }           
         }
+        } else {
+            logger.log(Level.INFO, "Within the 2nd constructor: getCustomQuestionResponses returns null=> source does not come with non-null customQuestionResponse");
+        }
+        
+        
+        
         this.setCustomQuestionResponses(customQuestionResponses);
         this.setGuestBookQuestionnaire(source.getGuestBookQuestionnaire());
     }

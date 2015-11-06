@@ -61,6 +61,11 @@ import javax.inject.Named;
 @Named("TermsOfUsePage")
 @ViewScoped
 public class TermsOfUsePage extends VDCBaseBean {
+    
+    
+    private static final Logger logger = Logger.getLogger(TermsOfUsePage.class.getName());
+    
+    
     @EJB private StudyServiceLocal studyService;
     @EJB private VDCNetworkServiceLocal vdcNetworkService;
     @EJB private GuestBookResponseServiceBean guestBookResponseServiceBean;
@@ -354,6 +359,12 @@ public class TermsOfUsePage extends VDCBaseBean {
                     StringTokenizer st = new StringTokenizer(fileId, ",");
                     while (st.hasMoreTokens()) {
                         StudyFile file = studyFileService.getStudyFile(new Long(st.nextToken()));
+                        logger.log(Level.INFO, "within acceptTerms_action() : before instantiating a GuestBookResponse");
+                        if (guestBookResponse.getCustomQuestionResponses() == null){
+                            logger.log(Level.INFO, "CustomQuestionResponses of the guestBookResponse is null");
+                        } else {
+                            logger.log(Level.INFO, "CustomQuestionResponses of the guestBookResponse is NOT null");
+                        }
                         GuestBookResponse gbSave = new GuestBookResponse(guestBookResponse);
                         gbSave.setStudyFile(file);
                         //Change to add to hashmap

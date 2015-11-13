@@ -101,6 +101,7 @@ import javax.imageio.stream.ImageOutputStream;
 
 import edu.harvard.iq.dvn.ingest.dsb.impl.*;
 import java.io.BufferedOutputStream;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.faces.context.FacesContext;
 import javax.inject.Inject;
@@ -129,6 +130,7 @@ public class FileDownloadServlet extends HttpServlet {
     /** Sets the logger (use the package name) */
     private static Logger dbgLog = Logger.getLogger(FileDownloadServlet.class.getPackage().getName());
     
+    private static final Logger logger = Logger.getLogger(FileDownloadServlet.class.getName());
 
     @EJB
     StudyServiceLocal studyService;
@@ -1147,6 +1149,19 @@ public class FileDownloadServlet extends HttpServlet {
         friendlyFormatName = FileUtil.getUserFriendlyTypeForMime(formatMimeType);
         
         guestbookResponse.setDownloadtype("File Download - " + friendlyFormatName);       
+        
+        
+        logger.log(Level.INFO, 
+            "FileDownloadServlet#incrementDownloadCounts():s:guestbookResponse:firstName={0}", 
+                guestbookResponse.getFirstname());
+        logger.log(Level.INFO, 
+            "s:FileDownloadServlet#incrementDownloadCounts():s:guestbookResponse:Institution={0}",
+                guestbookResponse.getInstitution());
+                
+                
+        
+        
+        
         if ( vdc != null ) {
             studyService.incrementNumberOfDownloads(file.getId(), vdc.getId(), (GuestBookResponse) guestbookResponse);
         } else {
@@ -2157,15 +2172,40 @@ public class FileDownloadServlet extends HttpServlet {
             while (it.hasNext()) {
                 Long fid = (Long) it.next();
                 StudyFile file = studyFileService.getStudyFile(new Long(fid));
+                
                 Long versionNum = null; 
-                if (versionNumber != null) versionNum = Long.valueOf(versionNumber).longValue();   
-                System.out.print("versionNumber " + versionNumber);
-                StudyVersion sv = file.getStudy().getStudyVersionByNumber(versionNum);
-                GuestBookResponse guestbookResponse = (GuestBookResponse) vdcSession.getGuestbookResponseMap().get("guestBookResponse_" + file.getStudy().getId());
-                if (guestbookResponse == null) {
-                    //need to set up dummy network response
-                    guestbookResponse = guestBookResponseServiceBean.initNetworkGuestBookResponse(file.getStudy(), file, vdcSession.getLoginBean());
+                
+                if (versionNumber != null){
+                    versionNum = Long.valueOf(versionNumber).longValue();
                 }
+                
+                System.out.print("versionNumber " + versionNumber);
+                
+                StudyVersion sv = file.getStudy().getStudyVersionByNumber(versionNum);
+                
+                // the following key, file.getStudy().getId(), is for single-file case
+                // corrected on 2015-11-13
+//                GuestBookResponse guestbookResponse = (GuestBookResponse) vdcSession.getGuestbookResponseMap().get("guestBookResponse_" + file.getStudy().getId());
+                // try the correct key, "guestBookResponse_" + file.getId()
+                // as specified in TermsOfUserpage#acceptTerms_action()
+                GuestBookResponse guestbookResponse = 
+                        (GuestBookResponse) vdcSession.getGuestbookResponseMap().get("guestBookResponse_" + file.getId());
+                
+                if (guestbookResponse == null) {
+                    logger.log(Level.INFO, 
+                            "non-null guestbookResponse was found for the key={0}", 
+                            "guestBookResponse_" + file.getId());
+                } else {
+                        //need to set up dummy network response
+                        logger.log(Level.WARNING, 
+                            "guestbookResponse was NOT found even for the key={0}", 
+                            "guestBookResponse_" + file.getId());
+                        logger.log(Level.INFO, "supply dummy network response");
+                        guestbookResponse = 
+                                guestBookResponseServiceBean.initNetworkGuestBookResponse(file.getStudy(), file, vdcSession.getLoginBean());
+                    
+                }
+                
                 guestbookResponse.setStudyVersion(sv);
                 guestbookResponse.setSessionId(sessionId);
                                

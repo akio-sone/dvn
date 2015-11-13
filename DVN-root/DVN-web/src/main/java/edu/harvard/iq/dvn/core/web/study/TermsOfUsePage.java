@@ -359,13 +359,18 @@ public class TermsOfUsePage extends VDCBaseBean {
                     StringTokenizer st = new StringTokenizer(fileId, ",");
                     while (st.hasMoreTokens()) {
                         StudyFile file = studyFileService.getStudyFile(new Long(st.nextToken()));
-                        logger.log(Level.INFO, "within acceptTerms_action() : before instantiating a GuestBookResponse");
+                        
+                        logger.log(Level.FINE, "Multiple: for guestBookResponse_{0}", file.getId());
+
                         if (guestBookResponse.getCustomQuestionResponses() == null){
-                            logger.log(Level.INFO, "CustomQuestionResponses of the guestBookResponse is null");
+                            logger.log(Level.FINE, "CustomQuestionResponses of the guestBookResponse is null");
                         } else {
-                            logger.log(Level.INFO, "CustomQuestionResponses of the guestBookResponse is NOT null");
+                            logger.log(Level.FINE, "CustomQuestionResponses of the guestBookResponse is NOT null");
                         }
+                        
+                        
                         GuestBookResponse gbSave = new GuestBookResponse(guestBookResponse);
+
                         gbSave.setStudyFile(file);
                         //Change to add to hashmap
                         guestbookResponseMap.put("guestBookResponse_" + file.getId(), guestBookResponse);
@@ -373,8 +378,11 @@ public class TermsOfUsePage extends VDCBaseBean {
                     }
                 } else {
                     //only one file downloaded.....
+                    
                     Long fileLongId = new Long(fileId);
                     StudyFile file = studyFileService.getStudyFile(fileLongId);
+                    logger.log(Level.FINE, "Single: for guestBookResponse_{0}", file.getStudy().getId());
+                    
                     guestBookResponse.setStudyFile(file);
                     //Change to add to hashmap
                     guestbookResponseMap.put("guestBookResponse_" + file.getStudy().getId(), guestBookResponse);

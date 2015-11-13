@@ -4,12 +4,12 @@
     <parent>
         <artifactId>DVN-root</artifactId>
         <groupId>edu.harvard.iq.dvn</groupId>
-        <version>3.6.3-odum-01</version>
+        <version>3.6.3-odum-02</version>
     </parent>
 
     <groupId>edu.harvard.iq.dvn</groupId>
     <artifactId>DVN-web</artifactId>
-    <version>3.6.3-odum-01</version>
+    <version>3.6.3-odum-02</version>
     <packaging>war</packaging>
     <name>DVN-web</name>
 

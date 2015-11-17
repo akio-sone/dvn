@@ -2192,18 +2192,18 @@ public class FileDownloadServlet extends HttpServlet {
                         (GuestBookResponse) vdcSession.getGuestbookResponseMap().get("guestBookResponse_" + file.getId());
                 
                 if (guestbookResponse == null) {
-                    logger.log(Level.INFO, 
-                            "non-null guestbookResponse was found for the key={0}", 
+                    //need to set up dummy network response
+                    logger.log(Level.FINE, 
+                            "guestbookResponse was NOT found for the key={0}", 
                             "guestBookResponse_" + file.getId());
-                } else {
-                        //need to set up dummy network response
-                        logger.log(Level.WARNING, 
-                            "guestbookResponse was NOT found even for the key={0}", 
-                            "guestBookResponse_" + file.getId());
-                        logger.log(Level.INFO, "supply dummy network response");
-                        guestbookResponse = 
-                                guestBookResponseServiceBean.initNetworkGuestBookResponse(file.getStudy(), file, vdcSession.getLoginBean());
+                    logger.log(Level.INFO, "guestbookResponse is null: supply dummy guestbookResponse response");
+                    guestbookResponse = 
+                            guestBookResponseServiceBean.initNetworkGuestBookResponse(file.getStudy(), file, vdcSession.getLoginBean());
                     
+                } else {
+                    logger.log(Level.FINE, 
+                            "guestbookResponse was found for the key={0}", 
+                            "guestBookResponse_" + file.getId());
                 }
                 
                 guestbookResponse.setStudyVersion(sv);

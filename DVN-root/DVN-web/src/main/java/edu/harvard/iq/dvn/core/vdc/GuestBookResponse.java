@@ -99,7 +99,7 @@ public class GuestBookResponse implements Serializable {
         List <CustomQuestionResponse> customQuestionResponses = new ArrayList();
         
         if (source.getCustomQuestionResponses() != null){
-            logger.log(Level.INFO, "Within the 2nd constructor: getCustomQuestionResponses returns NOT null => source contains non-null customQuestionResponse");
+            logger.log(Level.FINE, "Within the 2nd constructor: getCustomQuestionResponses returns NOT null => source contains non-null customQuestionResponse");
         if (!source.getCustomQuestionResponses().isEmpty()){
             for (CustomQuestionResponse customQuestionResponse : source.getCustomQuestionResponses() ){
                 CustomQuestionResponse customQuestionResponseAdd = new CustomQuestionResponse();
@@ -110,7 +110,7 @@ public class GuestBookResponse implements Serializable {
             }           
         }
         } else {
-            logger.log(Level.INFO, "Within the 2nd constructor: getCustomQuestionResponses returns null=> source does not come with non-null customQuestionResponse");
+            logger.log(Level.FINE, "Within the 2nd constructor: getCustomQuestionResponses returns null=> source does not come with non-null customQuestionResponse");
         }
         
         

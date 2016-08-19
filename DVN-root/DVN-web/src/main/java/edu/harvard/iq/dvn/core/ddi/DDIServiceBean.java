@@ -216,6 +216,7 @@ public class DDIServiceBean implements DDIServiceLocal {
                 createCodeBook(xmlw, s.getReleasedVersion(), null, null);
                 xmlw.writeEndDocument();
             } catch (XMLStreamException ex) {
+                logger.log(Level.SEVERE, "exportStudyVersion: ddi-rendering error", ex);
                 Logger.getLogger("global").log(Level.SEVERE, null, ex);
                 throw new EJBException("ERROR occurred in exportStudy.", ex);
             } finally {
@@ -265,6 +266,7 @@ public class DDIServiceBean implements DDIServiceLocal {
             createCodeBook(xmlw, sv, xpathExclude, xpathInclude);
             xmlw.writeEndDocument();
         } catch (XMLStreamException ex) {
+            logger.log(Level.SEVERE, "exportStudyVersion: ddi-rendering error", ex);
             Logger.getLogger("global").log(Level.SEVERE, null, ex);
             throw new EJBException("ERROR occurred during partial export of a study.", ex);
         } finally {
@@ -576,6 +578,10 @@ public class DDIServiceBean implements DDIServiceLocal {
             writeAttribute(xmlw, "agency", AGENCY_DOI);
         }
         xmlw.writeCharacters( metadata.getStudy().getGlobalId() );
+        
+        logger.log(Level.FINE, "stdyDscr: globalId={0}", 
+                metadata.getStudy().getGlobalId());
+        
         xmlw.writeEndElement(); // IDNo
 
         for (StudyOtherId otherId : metadata.getStudyOtherIds()) {
@@ -1385,11 +1391,17 @@ public class DDIServiceBean implements DDIServiceLocal {
             xmlw.writeStartElement("fileTxt");
 
             xmlw.writeStartElement("fileName");
-            xmlw.writeCharacters( fm.getLabel() );
+            if (fm.getLabel() != null) {
+                xmlw.writeCharacters(fm.getLabel());
+            }
             xmlw.writeEndElement(); // fileName
 
             xmlw.writeStartElement("fileCont");
-            xmlw.writeCharacters( fm.getDescription() );
+            
+            if (fm.getDescription() != null) {
+                xmlw.writeCharacters(fm.getDescription());
+            }
+            
             xmlw.writeEndElement(); // fileCont
 
             // dimensions
